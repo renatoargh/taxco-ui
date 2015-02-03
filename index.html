@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerenciador de Tarefas</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/gritter.css">
+</head>
+<body>
+    <div class="container">
+
+    </div>
+
+    <script type="application/javascript" src="/js/jquery.min.js"></script>
+    <script type="application/javascript" src="/js/underscore.min.js"></script>
+    <script type="application/javascript" src="/js/backbone.min.js"></script>
+    <script type="application/javascript" src="/js/modelBinder.min.js"></script>
+    <script type="application/javascript" src="/js/bootstrap.min.js"></script>
+    <script type="application/javascript" src="/js/gritter.min.js"></script>
+
+    <script type="text/template" id="logInTemplate">
+        <div class="row">
+            <div class="col-sm-12 text-center">
+                <h1>
+                    Gerenciador de Tarefas
+                    <div class="lead">B. M. Silva Construções Ltda</div>
+                </h1>
+            </div>
+        </div>
+        <div class="row">
+            <div class="username form-group col-sm-offset-4 col-sm-4">
+                <label class="control-label" id="usernameLabel" for="username">
+                    Usuário
+                </label>
+                <input class="form-control" type="text" id="username" name="username" placeholder="Usuário"></input>
+                <span class="help-block"></span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="password form-group col-sm-offset-4 col-sm-4">
+                <label class="control-label" id="passwordLabel" for="password">
+                    Senha
+                </label>
+                <input class="form-control" type="password" id="password" name="password" placeholder="Senha"></input>
+                <span class="help-block"></span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-offset-4 col-sm-4">
+                <button id="login" class="btn btn-success pull-right">
+                    ENTRAR&nbsp;
+                    <i class="glyphicon glyphicon-ok"></i>
+                </button>
+            </div>
+        </div>
+    </script>
+
+    <script>
+    $(function() {
+        var LogInView = Backbone.View.extend({
+            initialize: function() {
+                this.model = new Backbone.Model();
+                this.modelBinder = new Backbone.ModelBinder();
+            },
+            template: _.template($('#logInTemplate').html()),
+            el: '.container',
+            render: function() {
+                this.$el.html(this.template());
+                this.modelBinder.bind(this.model, this.el);
+            },
+
+            events: {
+                'click button#login': 'login'
+            },
+
+            login: function() {
+                console.log(JSON.stringify(this.model, null, 4));
+            }
+        });
+
+        var Router = Backbone.Router.extend({
+                routes: {
+                    '': 'logIn' ,
+                    'tasks': 'listTasks',
+                    'tasks/:id': 'showTask'
+                }
+            }),
+            router = new Router();
+
+        router.on('route:logIn', function() {
+            var view = new LogInView();
+            view.render();
+        });
+
+        Backbone.history.start();
+    });
+    </script>
+</body>
+</html>
