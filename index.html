@@ -5,6 +5,7 @@
     <title>Gerenciador de Tarefas</title>
     <link rel="stylesheet" href="/css/bootstrap.min.css">
     <link rel="stylesheet" href="/css/gritter.css">
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
     <div class="container">
@@ -15,8 +16,11 @@
     <script type="application/javascript" src="/js/underscore.min.js"></script>
     <script type="application/javascript" src="/js/backbone.min.js"></script>
     <script type="application/javascript" src="/js/modelBinder.min.js"></script>
+    <script type="application/javascript" src="/js/deepModel.min.js"></script>
     <script type="application/javascript" src="/js/bootstrap.min.js"></script>
     <script type="application/javascript" src="/js/gritter.min.js"></script>
+    <script type="application/javascript" src="/js/moment.min.js"></script>
+    <script type="application/javascript" src="/js/momentPtBr.js"></script>
 
     <script type="text/template" id="logInTemplate">
         <div class="row">
@@ -55,8 +59,57 @@
         </div>
     </script>
 
+    <script type="text/template" id="listTasksTemplate">
+        <div class="row">
+            <div class="col-sm-12 text-center">
+                <h1>
+                    Gerenciador de Tarefas
+                    <div class="lead">B. M. Silva Construções Ltda</div>
+                </h1>
+            </div>
+        </div>
+        <div class="row formActions">
+            <div class="col-sm-offset-3 col-sm-6 text-center">
+                <button class="btn btn-primary btn-xs">
+                    Nova Tarefa&nbsp;
+                    <i class="glyphicon glyphicon-plus"></i>
+                </button>
+                <button class="btn btn-primary btn-xs">
+                    Novo Usuário&nbsp;
+                    <i class="glyphicon glyphicon-user"></i>
+                </button>
+                <hr />
+            </div>
+        </div>
+        <div class="row" id="tasks">
+
+        </div>
+    </script>
+
+    <script type="text/template" id="taskTemplate">
+        <div class="task col-sm-offset-3 col-sm-6">
+            <h3 class="taskToggler">
+                <i class="glyphicon glyphicon-chevron-right"></i>&nbsp;
+                <span class="title"></span>&nbsp;
+                <span class="isOpen"></span>
+            </h3>
+            <span class="details hidden">
+                <p class="description text-justify"></p>
+                <p class="text-muted">
+                    Criado por
+                    <span class="owner text-muted"></span>
+                    em
+                    <span class="createdAt"></span>
+                    (<span class="createdAtFromNow"></span>)
+                </p>
+            </span>
+        </div>
+    </script>
+
     <script>
     $(function() {
+        var baseUrl = 'http://localhost:9090';
+
         var LogInView = Backbone.View.extend({
             initialize: function() {
                 this.model = new Backbone.Model();
@@ -74,8 +127,128 @@
             },
 
             login: function() {
-                console.log(JSON.stringify(this.model, null, 4));
+                router.navigate('/tasks', {
+                    trigger: true
+                });
             }
+        });
+
+        var TaskView = Backbone.View.extend({
+            initialize: function(task) {
+                this.model = new Backbone.DeepModel(task);
+                this.modelBinder = new Backbone.ModelBinder();
+            },
+            template: _.template($('#taskTemplate').html()),
+            render: function(container) {
+                var taskContainer = $('<div />'),
+                    _this = this;
+
+                this.setElement(taskContainer);
+                taskContainer.html(this.template());
+                container.append(taskContainer);
+                this.modelBinder.bind(this.model, this.el, {
+                    title: {
+                        selector: '.title',
+                        elAtributte: 'html'
+                    },
+                    isOpen: [{
+                        selector: '.isOpen',
+                        elAtributte: 'class',
+                        converter: function(direction, value) {
+                            var $span = _this.$el.find('.isOpen');
+                            $span.removeClass('label label-success label-danger');
+
+                            if(value) {
+                                $span.addClass('label label-success');
+                            } else {
+                                $span.addClass('label label-danger');
+                            }
+                        }
+                    }, {
+                        selector: '.isOpen',
+                        elAtributte: 'html',
+                        converter: function(direction, value) {
+                            return value ? 'Aberto' : 'Fechado';
+                        }
+                    }],
+                    'owner.name': {
+                        selector: '.owner',
+                        elAtributte: 'html'
+                    },
+                    description: {
+                        selector: '.description',
+                        elAtributte: 'html'
+                    },
+                    createdAt: [{
+                        selector: '.createdAt',
+                        elAtributte: 'html',
+                        converter: function(direction, value) {
+                            return new moment(value).format('L HH:mm');
+                        }
+                    }, {
+                        selector: '.createdAtFromNow',
+                        elAtributte: 'html',
+                        converter: function(direction, value) {
+                            return new moment(value).fromNow();
+                        }
+                    }]
+                });
+            },
+
+            events: {
+                'click .taskToggler': 'toggleTaskDetails'
+            },
+
+            areDetailsHidden: true,
+
+            toggleTaskDetails: function() {
+                var $details = this.$el.find('.details'),
+                    $icon = this.$el.find('i.glyphicon');
+
+                $details.toggleClass('hidden', !this.areDetailsHidden);
+                $icon.toggleClass('glyphicon-chevron-right', !this.areDetailsHidden);
+
+                $details.toggleClass('show', this.areDetailsHidden);
+                $icon.toggleClass('glyphicon-chevron-down', this.areDetailsHidden);
+
+                this.areDetailsHidden = !this.areDetailsHidden;
+            }
+        });
+
+        var ListTasksView = Backbone.View.extend({
+            initialize: function() {
+                this.model = new Backbone.Model();
+                this.modelBinder = new Backbone.ModelBinder();
+            },
+            template: _.template($('#listTasksTemplate').html()),
+            el: '.container',
+            _render: function(tasks) {
+                var _this = this;
+                this.$el.html(this.template());
+
+                tasks.forEach(function(task) {
+                    var taskView = new TaskView(task);
+                    taskView.render(_this.$el.find('#tasks'));
+                });
+
+                this.modelBinder.bind(this.model, this.el);
+            },
+            render: function() {
+                var _this = this,
+                    get = $.getJSON(baseUrl + '/tasks');
+
+                get.done(function(tasks) {
+                    _this._render(tasks);
+                });
+
+                get.fail(function(err, a, b) {
+                    alert('Algo deu errado...');
+                });
+            },
+
+            events: {
+
+            },
         });
 
         var Router = Backbone.Router.extend({
@@ -89,6 +262,11 @@
 
         router.on('route:logIn', function() {
             var view = new LogInView();
+            view.render();
+        });
+
+        router.on('route:listTasks', function() {
+            var view = new ListTasksView();
             view.render();
         });
 

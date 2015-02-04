@@ -1,0 +1,16 @@
+.taskToggler {
+    cursor: pointer;
+    display: inline;
+}
+
+.task {
+    margin-bottom: 10px;
+}
+
+.task .details {
+    margin-top: 10px;
+}
+
+.formActions {
+    margin-bottom: 15px;
+}
