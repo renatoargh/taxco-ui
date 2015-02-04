@@ -14,3 +14,11 @@
 .formActions {
     margin-bottom: 15px;
 }
+
+.formActions .pull-left {
+    margin-right: 5px;
+}
+
+.formActions .pull-right {
+    margin-left: 5px;
+}
