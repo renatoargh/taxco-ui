@@ -23,12 +23,9 @@
     <script type="application/javascript" src="/js/momentPtBr.js"></script>
 
     <script type="text/template" id="logInTemplate">
-        <div class="row">
+        <div class="row logotipo">
             <div class="col-sm-12 text-center">
-                <h1>
-                    Gerenciador de Tarefas
-                    <div class="lead">B. M. Silva Construções Ltda</div>
-                </h1>
+                <img src="/img/logotipo-bmsilva.png" alt="B. M. Silva Construções Ltda" />
             </div>
         </div>
         <div class="row">
@@ -51,35 +48,88 @@
         </div>
         <div class="row">
             <div class="col-sm-offset-4 col-sm-4">
+                <button id="signUp" class="btn btn-link pull-left">
+                    Quero me cadastrar
+                </button>
                 <button id="login" class="btn btn-success pull-right">
                     ENTRAR&nbsp;
                     <i class="glyphicon glyphicon-ok"></i>
                 </button>
             </div>
         </div>
+
+        <div class="modal fade" id="signUpModal" tabindex="-1" role="dialog" aria-labelledby="signUpModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span aria-hidden="true">&times;</span>
+                            <span class="sr-only">Fechar</span>
+                        </button>
+
+                        <h4 class="modal-title" id="signUpModalLabel">Novo Cadastro</h4>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="name form-group col-sm-12">
+                                <label class="control-label" id="nameLabel" for="name">
+                                    Nome
+                                </label>
+                                <input class="form-control" type="text" id="name" name="name" placeholder="Nome"></input>
+                                <span class="help-block"></span>
+                            </div>
+                            <div class="email form-group col-sm-12">
+                                <label class="control-label" id="emailLabel" for="email">
+                                    Email
+                                </label>
+                                <input class="form-control" type="text" id="email" name="email" placeholder="Email"></input>
+                                <span class="help-block"></span>
+                            </div>
+                            <div class="password form-group col-sm-12">
+                                <label class="control-label" id="passwordLabel" for="password">
+                                    Senha
+                                </label>
+                                <input class="form-control" type="password" id="password" name="password" placeholder="Senha"></input>
+                                <span class="help-block"></span>
+                            </div>
+                            <div class="passwordConfirmation form-group col-sm-12">
+                                <label class="control-label" id="passwordConfirmationLabel" for="passwordConfirmation">
+                                    Confirme sua senha
+                                </label>
+                                <input class="form-control" type="password" id="passwordConfirmation" name="passwordConfirmation" placeholder="Confirme sua senha"></input>
+                                <span class="help-block"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                        <button id="sendSignUpForm" type="button" class="btn btn-primary">Enviar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </script>
 
     <script type="text/template" id="listTasksTemplate">
-        <div class="row">
+        <div class="row logotipo">
             <div class="col-sm-12 text-center">
-                <h1>
-                    Gerenciador de Tarefas
-                    <div class="lead">B. M. Silva Construções Ltda</div>
-                </h1>
+                <img src="/img/logotipo-bmsilva.png" alt="B. M. Silva Construções Ltda" />
             </div>
         </div>
         <div class="row formActions">
             <div class="col-sm-offset-3 col-sm-6">
-                <button class="btn btn-primary btn-xs pull-left">
+                <button class="btn btn-primary btn-sm pull-left">
                     Nova Tarefa&nbsp;
                     <i class="glyphicon glyphicon-plus"></i>
                 </button>
-                <button class="btn btn-primary btn-xs pull-left">
+                <button class="btn btn-primary btn-sm pull-left">
                     Novo Usuário&nbsp;
                     <i class="glyphicon glyphicon-user"></i>
                 </button>
                 <div class="dropdown pull-right">
-                  <button class="btn btn-primary btn-xs dropdown-toggle" type="button" id="filter" data-toggle="dropdown">
+                  <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="filter" data-toggle="dropdown">
                     <i class="glyphicon glyphicon-filter"></i>&nbsp;
                     Filtrar&nbsp;
                     <span class="caret"></span>
@@ -100,13 +150,28 @@
 
     <script type="text/template" id="taskTemplate">
         <div class="task col-sm-offset-3 col-sm-6">
-            <h3 class="taskToggler">
+            <h4 class="taskToggler">
                 <i class="glyphicon glyphicon-chevron-right"></i>&nbsp;
                 <span class="title"></span>&nbsp;
                 <span class="isOpen"></span>
-            </h3>
+            </h4>
             <span class="details hidden">
                 <p class="description text-justify"></p>
+                <div class="actions">
+                    <button class="btn btn-xs btn-primary pull-left">
+                        Editar&nbsp;
+                        <i class="glyphicon glyphicon-pencil"></i>
+                    </button>
+                    <button class="btn btn-xs btn-primary pull-left">
+                        Comentar&nbsp;
+                        <i class="glyphicon glyphicon-comment"></i>
+                    </button>
+                    <button class="btn btn-xs btn-danger pull-right">
+                        Apagar&nbsp;
+                        <i class="glyphicon glyphicon-trash"></i>
+                    </button>
+                    <br style="clear: both;" />
+                </div>
                 <p class="text-muted">
                     Criado por
                     <span class="owner text-muted"></span>
@@ -122,6 +187,19 @@
     $(function() {
         var baseUrl = 'http://localhost:9090';
 
+        function showMessage(params) {
+            return $.gritter.add({
+                title: params.title || '',
+                text: params.text || '',
+                time: 3000,
+                class_name: {
+                    info: 'gritter-info',
+                    error: 'gritter-error',
+                    success: 'gritter-success',
+                }[params.type || 'info']
+            });
+        }
+
         var LogInView = Backbone.View.extend({
             initialize: function() {
                 this.model = new Backbone.Model();
@@ -135,14 +213,51 @@
             },
 
             events: {
-                'click button#login': 'login'
+                'click button#login': 'login',
+                'click button#signUp': 'signUp',
+                'click button#sendSignUpForm': 'sendSignUpForm'
             },
 
             login: function() {
                 router.navigate('/tasks', {
                     trigger: true
                 });
-            }
+            },
+
+            signUp: function(e) {
+                $('#signUpModal').modal('show');
+            },
+
+            sendSignUpForm: function(e) {
+                if(this.model.get('password') !== this.model.get('passwordConfirmation')) {
+                    return showMessage({
+                        type: 'error',
+                        text: 'As senhas não coincidem'
+                    });
+                }
+
+                var post = $.ajax({
+                    type: 'POST',
+                    url: baseUrl + '/user',
+                    data: _.pick(this.model.attributes, 'name', 'email', 'password');
+                });
+
+                post.done(function() {
+                    showMessage({
+                        type: 'success',
+                        title: 'Sucesso',
+                        text: 'Seu cadastro foi recebido e será liberado após análise'
+                    });
+                });
+
+                post.fail(function() {
+                    showMessage({
+                        type: 'error',
+                        title: 'Erro',
+                        text: 'Algo deu errado'
+                    });
+                })
+            },
         });
 
         var TaskView = Backbone.View.extend({
@@ -215,7 +330,7 @@
 
             toggleTaskDetails: function() {
                 var $details = this.$el.find('.details'),
-                    $icon = this.$el.find('i.glyphicon');
+                    $icon = this.$el.find('.taskToggler i.glyphicon');
 
                 $details.toggleClass('hidden', !this.areDetailsHidden);
                 $icon.toggleClass('glyphicon-chevron-right', !this.areDetailsHidden);

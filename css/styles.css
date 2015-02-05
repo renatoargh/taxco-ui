@@ -1,3 +1,11 @@
+.row.logotipo {
+    margin-top: 10px;
+}
+
+.btn#signUp {
+    padding-left: 0px !important;
+}
+
 .taskToggler {
     cursor: pointer;
     display: inline;
@@ -12,6 +20,7 @@
 }
 
 .formActions {
+    margin-top: 10px;
     margin-bottom: 15px;
 }
 
@@ -20,5 +29,14 @@
 }
 
 .formActions .pull-right {
+    margin-left: 5px;
+}
+
+.task .actions button.pull-left {
+    margin-right: 5px;
+    margin-left: 0px !important;
+}
+
+.task .actions button.pull-left {
     margin-left: 5px;
 }
