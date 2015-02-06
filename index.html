@@ -25,15 +25,15 @@
     <script type="text/template" id="logInTemplate">
         <div class="row logotipo">
             <div class="col-sm-12 text-center">
-                <img src="/img/logotipo-bmsilva.png" alt="B. M. Silva Construções Ltda" />
+                <img width="200px" height="113px" src="/img/logotipo-bmsilva.png" alt="B. M. Silva Construções Ltda" />
             </div>
         </div>
         <div class="row">
-            <div class="username form-group col-sm-offset-4 col-sm-4">
-                <label class="control-label" id="usernameLabel" for="username">
-                    Usuário
+            <div class="email form-group col-sm-offset-4 col-sm-4">
+                <label class="control-label" id="emailLabel" for="email">
+                    Email
                 </label>
-                <input class="form-control" type="text" id="username" name="username" placeholder="Usuário"></input>
+                <input class="form-control" type="text" id="email" name="email" placeholder="Email"></input>
                 <span class="help-block"></span>
             </div>
         </div>
@@ -115,7 +115,7 @@
     <script type="text/template" id="listTasksTemplate">
         <div class="row logotipo">
             <div class="col-sm-12 text-center">
-                <img src="/img/logotipo-bmsilva.png" alt="B. M. Silva Construções Ltda" />
+                <img width="200px" height="113px" src="/img/logotipo-bmsilva.png" alt="B. M. Silva Construções Ltda" />
             </div>
         </div>
         <div class="row formActions">
@@ -200,6 +200,27 @@
             });
         }
 
+        function getCurrentUser() {
+            var currentUser = localStorage.getItem('currentUser');
+            return currentUser ? JSON.parse(currentUser) : null;
+        }
+
+        function setCurrentUser(user) {
+            var currentUser = JSON.stringify(user);
+            localStorage.setItem('currentUser', currentUser);
+        }
+
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                var user = getCurrentUser(),
+                    isTaxcoRequest = settings.url.indexOf(baseUrl) === 0;
+
+                if(isTaxcoRequest && user && user.credentials) {
+                    xhr.setRequestHeader("Authorization", user.credentials);
+                }
+            }
+        });
+
         var LogInView = Backbone.View.extend({
             initialize: function() {
                 this.model = new Backbone.Model();
@@ -219,9 +240,38 @@
             },
 
             login: function() {
-                router.navigate('/tasks', {
-                    trigger: true
+                var user = this.model,
+                    credentials = 'Basic ' + btoa([
+                        user.get('email'),
+                        user.get('password')
+                    ].join(':'));
+
+                var get = $.ajax({
+                    type: 'GET',
+                    url: baseUrl + '/users/me',
+                    beforeSend: function(request) {
+                        request.setRequestHeader("Authorization", credentials);
+                    }
                 });
+
+                get.done(function(user) {
+                    setCurrentUser(user);
+
+                    router.navigate('/tasks', {
+                        trigger: true
+                    });
+                });
+
+                get.fail(function() {
+                    showMessage({
+                        type: 'error',
+                        title: 'Erro',
+                        text: [
+                            'Email ou senha não encontrados.',
+                            'O seu acesso só estará disponível após liberação pelo moderador.'
+                        ].join(' ')
+                    });
+                })
             },
 
             signUp: function(e) {
@@ -229,6 +279,9 @@
             },
 
             sendSignUpForm: function(e) {
+                var $signUpModal = $('#signUpModal'),
+                    _this = this;
+
                 if(this.model.get('password') !== this.model.get('passwordConfirmation')) {
                     return showMessage({
                         type: 'error',
@@ -238,15 +291,28 @@
 
                 var post = $.ajax({
                     type: 'POST',
-                    url: baseUrl + '/user',
-                    data: _.pick(this.model.attributes, 'name', 'email', 'password');
+                    url: baseUrl + '/users',
+                    data: _.pick(this.model.attributes, 'name', 'email', 'password')
                 });
 
                 post.done(function() {
+                    $signUpModal.modal('hide');
+
+                    _this.model.set({
+                        id: null,
+                        name: '',
+                        email: '',
+                        password: '',
+                        passwordConfirmation: ''
+                    });
+
                     showMessage({
                         type: 'success',
                         title: 'Sucesso',
-                        text: 'Seu cadastro foi recebido e será liberado após análise'
+                        text: [
+                            'Seu cadastro foi recebido e será analisado.',
+                            'Em breve você receberá um email com instruções de login.'
+                        ].join(' ')
                     });
                 });
 
