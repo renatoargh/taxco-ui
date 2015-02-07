@@ -1,3 +1,7 @@
+.user .edit {
+    display: none;
+}
+
 .row.logotipo {
     margin-top: 10px;
 }

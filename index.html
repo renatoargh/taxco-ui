@@ -165,7 +165,7 @@
                     </div>
 
                     <div class="modal-body">
-                        <table id="users" class="table table-stripped table-hover table-condensed">
+                        <table id="users" class="table table-striped table-hover table-condensed">
                             <thead>
                                 <tr>
                                     <th>Nome</th>
@@ -186,15 +186,31 @@
             </div>
         </div>
     </script>
-
     <script type="text/template" id="userTemplate">
-        <td class="name"></td>
-        <td class="email"></td>
-        <td class="role"></td>
-        <td class="enabled"></td>
+        <td class="name">
+            <span class="visualize name"></span>
+            <input type="text" maxlength="75" class="edit name"></input>
+        </td>
+        <td class="email">
+            <span class="email visualize"></span>
+            <input type="text" maxlength="50" class="email edit"></input>
+        </td>
+        <td class="role">
+            <span class="role visualize"></span>
+            <select class="role edit">
+                <option value="user">Usuário</option>
+                <option value="admin">Administrador</option>
+            </select>
+        </td>
+        <td class="enabled">
+            <span class="enabled visualize"></span>
+            <select class="enabled edit">
+                <option value="true">SIM</option>
+                <option value="false">NÃO</option>
+            </select>
+        </td>
         <td class="lastInteraction"></td>
     </script>
-
     <script type="text/template" id="taskTemplate">
         <div class="task col-sm-offset-3 col-sm-6">
             <h4 class="taskToggler">
@@ -463,32 +479,91 @@
             },
             template: _.template($('#userTemplate').html()),
             render: function() {
-                var rootElement = $('<tr />');
+                var rootElement = $('<tr class="user"/>');
+                rootElement.bind('click', this.editUser.bind(this));
 
                 this.setElement(rootElement);
                 this.$el.html(this.template());
                 $('table#users tbody').append(this.$el);
 
                 this.modelBinder.bind(this.model, this.el, {
-                    name: {
-                        selector: '.name',
+                    name: [{
+                        selector: '.visualize.name',
                         elAtributte: 'html',
                         converter: function(direction, value) {
                             return value;
                         }
-                    },
-                    email: {
-                        selector: '.email',
+                    }, {
+                        selector: '.edit.name',
+                        converter: function(direction, value) {
+                            if(direction === 'ModelToView') {
+                                return value || '';
+                            } else {
+                                return value.trim();
+                            }
+                        }
+                    }],
+                    email: [{
+                        selector: '.visualize.email',
                         elAtributte: 'html',
                         converter: function(direction, value) {
                             return value;
                         }
-                    },
+                    }, {
+                        selector: '.edit.email',
+                        converter: function(direction, value) {
+                            if(direction === 'ModelToView') {
+                                return value || '';
+                            } else {
+                                return value.trim();
+                            }
+                        }
+                    }],
                     enabled: [{
-                        selector: '.enabled',
+                        selector: '.visualize.enabled',
                         elAtributte: 'html',
                         converter: function(direction, value) {
                             return value ? 'SIM' : 'NÃO'
+                        }
+                    }, {
+                        selector: '.edit.enabled',
+                        converter: function(direction, value) {
+                            if(direction === 'ModelToView') {
+                                if(typeof value === 'undefined' || value === null) {
+                                    return 'false';
+                                }
+
+                                return value.toString();
+                            } else {
+                                return value === 'true';
+                            }
+                        }
+                    }],
+                    role: [{
+                        selector: '.visualize.role',
+                        elAtributte: 'html',
+                        converter: function(direction, value) {
+                            if(direction === 'ModelToView') {
+                                return {
+                                    'admin': 'Administrador',
+                                    'user': 'Usuário'
+                                }[value];
+                            } else {
+                                return value;
+                            }
+                        }
+                    }, {
+                        selector: '.edit.role',
+                        converter: function(direction, value) {
+                            if(direction === 'ModelToView') {
+                                if(!value) {
+                                    return 'user';
+                                }
+
+                                return value;
+                            } else {
+                                return value;
+                            }
                         }
                     }],
                     lastInteraction: {
@@ -501,19 +576,26 @@
 
                             return new moment(value).format('L HH:mm:ss');
                         }
-                    },
-                    role: {
-                        selector: '.role',
-                        elAtributte: 'html',
-                        converter: function(direction, value) {
-                            return {
-                                'admin': 'Administrador',
-                                'user': 'Usuário'
-                            }[value];
-                        }
                     }
                 });
-            }
+            },
+
+            events: {
+
+            },
+
+            currentMode: 'visualize',
+            editUser: function(e) {
+                if(this.currentMode === 'visualize') {
+                    this.$el.find('.edit').show();
+                    this.$el.find('.visualize').hide();
+                    this.currentMode = 'edit';
+                } else {
+                    this.$el.find('.edit').hide();
+                    this.$el.find('.visualize').show();
+                    this.currentMode = 'visualize';
+                }
+            },
         });
 
         var ListTasksView = Backbone.View.extend({
