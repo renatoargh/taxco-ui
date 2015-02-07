@@ -32,6 +32,10 @@
     margin-left: 5px;
 }
 
+.task .actions {
+    margin-top: 15px;
+}
+
 .task .actions button.pull-left {
     margin-right: 5px;
     margin-left: 0px !important;

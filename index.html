@@ -67,7 +67,10 @@
                             <span class="sr-only">Fechar</span>
                         </button>
 
-                        <h4 class="modal-title" id="signUpModalLabel">Novo Cadastro</h4>
+                        <h4 class="modal-title" id="signUpModalLabel">
+                            <i class="glyphicon glyphicon-user" />&nbsp;
+                            Novo Cadastro
+                        </h4>
                     </div>
 
                     <div class="modal-body">
@@ -124,8 +127,8 @@
                     Nova Tarefa&nbsp;
                     <i class="glyphicon glyphicon-plus"></i>
                 </button>
-                <button class="btn btn-primary btn-sm pull-left">
-                    Novo Usuário&nbsp;
+                <button id="listUsers" class="btn btn-primary btn-sm pull-left">
+                    Usuários&nbsp;
                     <i class="glyphicon glyphicon-user"></i>
                 </button>
                 <div class="dropdown pull-right">
@@ -146,6 +149,50 @@
         <div class="row" id="tasks">
 
         </div>
+        <div class="modal fade" id="listUsersModal" tabindex="-1" role="dialog" aria-labelledby="listUsersModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span aria-hidden="true">&times;</span>
+                            <span class="sr-only">Fechar</span>
+                        </button>
+
+                        <h4 class="modal-title" id="listUsersModalLabel">
+                            <i class="glyphicon glyphicon-user"></i>
+                            Usuários
+                        </h4>
+                    </div>
+
+                    <div class="modal-body">
+                        <table id="users" class="table table-stripped table-hover table-condensed">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Email</th>
+                                    <th>Perfil</th>
+                                    <th>Habilitado</th>
+                                    <th>Última Interação</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">Ok</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/template" id="userTemplate">
+        <td class="name"></td>
+        <td class="email"></td>
+        <td class="role"></td>
+        <td class="enabled"></td>
+        <td class="lastInteraction"></td>
     </script>
 
     <script type="text/template" id="taskTemplate">
@@ -157,6 +204,13 @@
             </h4>
             <span class="details hidden">
                 <p class="description text-justify"></p>
+                <small class="text-muted">
+                    Criado por
+                    <span class="owner text-muted"></span>
+                    em
+                    <span class="createdAt"></span>
+                    (<span class="createdAtFromNow"></span>)
+                </small>
                 <div class="actions">
                     <button class="btn btn-xs btn-primary pull-left">
                         Editar&nbsp;
@@ -172,13 +226,7 @@
                     </button>
                     <br style="clear: both;" />
                 </div>
-                <p class="text-muted">
-                    Criado por
-                    <span class="owner text-muted"></span>
-                    em
-                    <span class="createdAt"></span>
-                    (<span class="createdAtFromNow"></span>)
-                </p>
+
             </span>
         </div>
     </script>
@@ -408,6 +456,66 @@
             }
         });
 
+        var UserView = Backbone.View.extend({
+            initialize: function(user) {
+                this.model = new Backbone.Model(user);
+                this.modelBinder = new Backbone.ModelBinder();
+            },
+            template: _.template($('#userTemplate').html()),
+            render: function() {
+                var rootElement = $('<tr />');
+
+                this.setElement(rootElement);
+                this.$el.html(this.template());
+                $('table#users tbody').append(this.$el);
+
+                this.modelBinder.bind(this.model, this.el, {
+                    name: {
+                        selector: '.name',
+                        elAtributte: 'html',
+                        converter: function(direction, value) {
+                            return value;
+                        }
+                    },
+                    email: {
+                        selector: '.email',
+                        elAtributte: 'html',
+                        converter: function(direction, value) {
+                            return value;
+                        }
+                    },
+                    enabled: [{
+                        selector: '.enabled',
+                        elAtributte: 'html',
+                        converter: function(direction, value) {
+                            return value ? 'SIM' : 'NÃO'
+                        }
+                    }],
+                    lastInteraction: {
+                        selector: '.lastInteraction',
+                        elAtributte: 'html',
+                        converter: function(direction, value) {
+                            if(!value) {
+                                return;
+                            }
+
+                            return new moment(value).format('L HH:mm:ss');
+                        }
+                    },
+                    role: {
+                        selector: '.role',
+                        elAtributte: 'html',
+                        converter: function(direction, value) {
+                            return {
+                                'admin': 'Administrador',
+                                'user': 'Usuário'
+                            }[value];
+                        }
+                    }
+                });
+            }
+        });
+
         var ListTasksView = Backbone.View.extend({
             initialize: function() {
                 this.model = new Backbone.Model();
@@ -440,7 +548,31 @@
             },
 
             events: {
+                'click button#listUsers': 'listUsers'
+            },
 
+            listUsers: function(e) {
+                var get = $.getJSON(baseUrl + '/users');
+
+                get.done(function(users) {
+                    $('table#users tbody').empty();
+
+                    users.forEach(function(user) {
+                        var userView = new UserView(user);
+                        userView.render();
+                    });
+
+                    var $listUsersModel = $('#listUsersModal');
+                    $listUsersModel.modal('show');
+                });
+
+                get.fail(function() {
+                    showMessage({
+                        type: 'error',
+                        title: 'Erro',
+                        message: 'Algo deu errado...'
+                    });
+                });
             },
         });
 
