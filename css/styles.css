@@ -1,4 +1,8 @@
-.user .edit {
+.user .edit, #savingUser, #newTaskModal .modal-body .visualize  {
+    display: none;
+}
+
+.displayNone {
     display: none;
 }
 
@@ -8,6 +12,14 @@
 
 .btn#signUp {
     padding-left: 0px !important;
+}
+
+input.name, input.email {
+    width: 100%;
+    margin: 0px;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
 }
 
 .taskToggler {

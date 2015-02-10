@@ -8,9 +8,7 @@
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-    <div class="container">
-
-    </div>
+    <div class="container"></div>
 
     <script type="application/javascript" src="/js/jquery.min.js"></script>
     <script type="application/javascript" src="/js/underscore.min.js"></script>
@@ -21,6 +19,7 @@
     <script type="application/javascript" src="/js/gritter.min.js"></script>
     <script type="application/javascript" src="/js/moment.min.js"></script>
     <script type="application/javascript" src="/js/momentPtBr.js"></script>
+    <script type="application/javascript" src="/js/marked.min.js"></script>
 
     <script type="text/template" id="logInTemplate">
         <div class="row logotipo">
@@ -123,7 +122,7 @@
         </div>
         <div class="row formActions">
             <div class="col-sm-offset-3 col-sm-6">
-                <button class="btn btn-primary btn-sm pull-left">
+                <button id="newTask" class="btn btn-primary btn-sm pull-left">
                     Nova Tarefa&nbsp;
                     <i class="glyphicon glyphicon-plus"></i>
                 </button>
@@ -138,16 +137,94 @@
                     <span class="caret"></span>
                   </button>
                   <ul class="dropdown-menu" role="menu" aria-labelledby="filter">
-                    <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Criadas por mim</a></li>
-                    <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Atribuidas a mim</a></li>
-                    <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Somente abertas</a></li>
-                    <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Somente fechadas</a></li>
+                    <li role="presentation">
+                        <a role="menuitem" tabindex="-1" href="#">
+                            <i class="glyphicon glyphicon-ok" />&nbsp;
+                            Criadas por mim
+                        </a>
+                    </li>
+                    <li role="presentation">
+                        <a role="menuitem" tabindex="-1" href="#">
+                            <i class="glyphicon glyphicon-ok" />&nbsp;
+                            Atribuidas a mim
+                        </a>
+                    </li>
+                    <li role="presentation">
+                        <a role="menuitem" tabindex="-1" href="#">
+                            <i class="glyphicon glyphicon-ok" />&nbsp;
+                            Abertas
+                        </a>
+                    </li>
+                    <li role="presentation">
+                        <a role="menuitem" tabindex="-1" href="#">
+                            <i class="glyphicon glyphicon-ok" />&nbsp;
+                            Fechadas
+                        </a>
+                    </li>
                   </ul>
                 </div>
             </div>
         </div>
-        <div class="row" id="tasks">
+        <div class="row" id="tasks"></div>
+        <div class="modal fade" id="newTaskModal" tabindex="-1" role="dialog" aria-labelledby="newTaskModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span aria-hidden="true">&times;</span>
+                            <span class="sr-only">Fechar</span>
+                        </button>
 
+                        <h4 class="modal-title" id="newTaskModalLabel">
+                            <i class="glyphicon glyphicon-file"></i>&nbsp;
+                            Nova Tarefa
+                        </h4>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="edit">
+                            <div class="row">
+                                <div class="title form-group col-sm-12">
+                                    <label class="control-label" id="titleLabel" for="title">
+                                        Título
+                                    </label>
+                                    <input class="form-control" type="text" id="title" name="title" placeholder="Título"></input>
+                                </div>
+                                <div class="description form-group col-sm-12">
+                                    <label class="control-label" id="descriptionLabel" for="description">
+                                        Descrição
+                                    </label>
+                                    <textarea name="description" id="description" cols="30" rows="10" class="form-control" placeholder="Descrição"></textarea>
+                                </div>
+
+                                <div class="assignedTo form-group col-sm-6">
+                                    <label class="control-label" id="assignedToLabel" for="assignedTo">
+                                        Atribuído A
+                                    </label>
+                                    <select class="form-control" id="assignedTo" name="assignedToId"></select>
+                                </div>
+                                <div class="visibleTo form-group col-sm-6">
+                                    <label class="control-label" id="visibleToLabel" for="visibleTo">
+                                        Visível Para
+                                    </label>
+                                    <select class="form-control" id="visibleTo" name="visibleToId" multiple></select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="visualize">
+                            <h4 id="taskTitle"></h4>
+                            <span id="taskDescription"></span>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button id="visualizeNewTask" type="button" class="btn btn-default pull-left">Visualizar</button>
+                        <button id="editNewTask" type="button" class="displayNone btn btn-default pull-left">Editar</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                        <button id="saveTask" type="button" class="btn btn-primary">Salvar</button>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="modal fade" id="listUsersModal" tabindex="-1" role="dialog" aria-labelledby="listUsersModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg">
@@ -180,36 +257,46 @@
                     </div>
 
                     <div class="modal-footer">
+                        <span id="savingUser" class="pull-left">
+                            Salvando...
+                        </span>
                         <button type="button" class="btn btn-primary" data-dismiss="modal">Ok</button>
                     </div>
                 </div>
             </div>
         </div>
     </script>
+
     <script type="text/template" id="userTemplate">
-        <td class="name">
+        <td width="27%" class="name">
             <span class="visualize name"></span>
-            <input type="text" maxlength="75" class="edit name"></input>
+            <input type="text" width="100%" maxlength="75" class="edit name"></input>
         </td>
-        <td class="email">
+        <td width="27%" class="email">
             <span class="email visualize"></span>
-            <input type="text" maxlength="50" class="email edit"></input>
+            <input type="text" width="100%" maxlength="50" class="email edit"></input>
         </td>
-        <td class="role">
+        <td width="15%" class="role">
             <span class="role visualize"></span>
             <select class="role edit">
                 <option value="user">Usuário</option>
                 <option value="admin">Administrador</option>
             </select>
         </td>
-        <td class="enabled">
+        <td width="10%" class="enabled">
             <span class="enabled visualize"></span>
             <select class="enabled edit">
                 <option value="true">SIM</option>
                 <option value="false">NÃO</option>
             </select>
         </td>
-        <td class="lastInteraction"></td>
+        <td width="21%" class="lastInteraction">
+            <span class="lastInteraction visualize"></span>
+            <button class="save edit btn btn-xs btn-primary">
+                Salvar&nbsp;
+                <i class="glyphicon glyphicon-floppy-disk" />
+            </button>
+        </td>
     </script>
     <script type="text/template" id="taskTemplate">
         <div class="task col-sm-offset-3 col-sm-6">
@@ -219,7 +306,7 @@
                 <span class="isOpen"></span>
             </h4>
             <span class="details hidden">
-                <p class="description text-justify"></p>
+                <div class="description"></div>
                 <small class="text-muted">
                     Criado por
                     <span class="owner text-muted"></span>
@@ -242,7 +329,6 @@
                     </button>
                     <br style="clear: both;" />
                 </div>
-
             </span>
         </div>
     </script>
@@ -310,6 +396,8 @@
                         user.get('password')
                     ].join(':'));
 
+                setCurrentUser(null);
+
                 var get = $.ajax({
                     type: 'GET',
                     url: baseUrl + '/users/me',
@@ -319,6 +407,7 @@
                 });
 
                 get.done(function(user) {
+                    user.credentials = credentials;
                     setCurrentUser(user);
 
                     router.navigate('/tasks', {
@@ -335,7 +424,7 @@
                             'O seu acesso só estará disponível após liberação pelo moderador.'
                         ].join(' ')
                     });
-                })
+                });
             },
 
             signUp: function(e) {
@@ -345,6 +434,8 @@
             sendSignUpForm: function(e) {
                 var $signUpModal = $('#signUpModal'),
                     _this = this;
+
+                setCurrentUser(null);
 
                 if(this.model.get('password') !== this.model.get('passwordConfirmation')) {
                     return showMessage({
@@ -410,20 +501,13 @@
                     },
                     isOpen: [{
                         selector: '.isOpen',
-                        elAtributte: 'class',
+                        elAttribute: 'class',
                         converter: function(direction, value) {
-                            var $span = _this.$el.find('.isOpen');
-                            $span.removeClass('label label-success label-danger');
-
-                            if(value) {
-                                $span.addClass('label label-success');
-                            } else {
-                                $span.addClass('label label-danger');
-                            }
+                            return value ? 'label label-danger' : 'label label-success';
                         }
                     }, {
                         selector: '.isOpen',
-                        elAtributte: 'html',
+                        elAttribute: 'html',
                         converter: function(direction, value) {
                             return value ? 'Aberto' : 'Fechado';
                         }
@@ -434,17 +518,20 @@
                     },
                     description: {
                         selector: '.description',
-                        elAtributte: 'html'
+                        elAttribute: 'html',
+                        converter: function(direction, value) {
+                            return marked(value);
+                        }
                     },
                     createdAt: [{
                         selector: '.createdAt',
-                        elAtributte: 'html',
+                        elAttribute: 'html',
                         converter: function(direction, value) {
                             return new moment(value).format('L HH:mm');
                         }
                     }, {
                         selector: '.createdAtFromNow',
-                        elAtributte: 'html',
+                        elAttribute: 'html',
                         converter: function(direction, value) {
                             return new moment(value).fromNow();
                         }
@@ -480,7 +567,7 @@
             template: _.template($('#userTemplate').html()),
             render: function() {
                 var rootElement = $('<tr class="user"/>');
-                rootElement.bind('click', this.editUser.bind(this));
+                rootElement.one('click', this.toggleMode.bind(this));
 
                 this.setElement(rootElement);
                 this.$el.html(this.template());
@@ -523,7 +610,9 @@
                         selector: '.visualize.enabled',
                         elAtributte: 'html',
                         converter: function(direction, value) {
-                            return value ? 'SIM' : 'NÃO'
+                            if(direction === 'ModelToView') {
+                                return value ? 'SIM' : 'NÃO'
+                            }
                         }
                     }, {
                         selector: '.edit.enabled',
@@ -567,7 +656,7 @@
                         }
                     }],
                     lastInteraction: {
-                        selector: '.lastInteraction',
+                        selector: 'span.lastInteraction',
                         elAtributte: 'html',
                         converter: function(direction, value) {
                             if(!value) {
@@ -581,11 +670,38 @@
             },
 
             events: {
+                'click button.save': 'saveUser'
+            },
 
+            saveUser: function(e) {
+                var _this = this,
+                    $savingUser = $('#savingUser');
+
+                $savingUser.show();
+
+                var put = $.ajax({
+                    url: baseUrl + '/users/' + this.model.get('id'),
+                    type: 'PUT',
+                    data: this.model.attributes
+                });
+
+                put.done(function() {
+                    $savingUser.hide();
+                    _this.toggleMode();
+                    _this.$el.one('click', _this.toggleMode.bind(_this));
+                });
+
+                put.fail(function() {
+                    showMessage({
+                        type: 'error',
+                        title: 'Erro',
+                        text: 'Ocorreu algum problema ao salvar as alterações no usuário'
+                    });
+                });
             },
 
             currentMode: 'visualize',
-            editUser: function(e) {
+            toggleMode: function(e) {
                 if(this.currentMode === 'visualize') {
                     this.$el.find('.edit').show();
                     this.$el.find('.visualize').hide();
@@ -624,13 +740,110 @@
                     _this._render(tasks);
                 });
 
-                get.fail(function(err, a, b) {
-                    alert('Algo deu errado...');
+                get.fail(function(err) {
+                    showMessage({
+                        type: 'error',
+                        title: 'Erro',
+                        text: 'Algo deu errado...'
+                    });
                 });
             },
 
             events: {
-                'click button#listUsers': 'listUsers'
+                'click button#listUsers': 'listUsers',
+                'click button#newTask': 'newTask',
+                'click #newTaskModal .modal-footer #visualizeNewTask': 'visualizeNewTask',
+                'click #newTaskModal .modal-footer #editNewTask': 'editNewTask',
+                'click #newTaskModal .modal-footer #saveTask': 'saveTask'
+            },
+
+            saveTask: function(e) {
+                console.log(JSON.stringify(this.model, null, 4));
+
+                var _this = this,
+                    post = $.ajax({
+                        url: baseUrl + '/tasks',
+                        type: 'POST',
+                        data: _.pick(this.model.attributes, [
+                            'title',
+                            'description',
+                            'assignedToId',
+                            'visibleToId'
+                        ])
+                    });
+
+                post.done(function() {
+                    var $newTask = _this.$el.find('#newTaskModal');
+                    $newTask.modal('hide');
+
+                    showMessage({
+                        type: 'success',
+                        title: 'Sucesso',
+                        text: 'Tarefa salva!'
+                    });
+                });
+
+                post.fail(function() {
+                    showMessage({
+                        type: 'error',
+                        title: 'Erro',
+                        text: 'Algo deu errado...'
+                    });
+                });
+            },
+
+            editNewTask: function(e) {
+                $('#newTaskModal .modal-body .edit').show();
+                $('#newTaskModal .modal-footer #visualizeNewTask').show();
+
+                $('#newTaskModal .modal-body .visualize').hide();
+                $('#newTaskModal .modal-footer #editNewTask').hide();
+            },
+
+            visualizeNewTask: function(e) {
+                var title = this.model.get('title'),
+                    description = this.model.get('description');
+
+                $('#newTaskModal .modal-body #taskTitle').html(title);
+                $('#newTaskModal .modal-body #taskDescription').html(marked(description || ''));
+
+                $('#newTaskModal .modal-body .edit').hide();
+                $('#newTaskModal .modal-footer #visualizeNewTask').hide();
+
+                $('#newTaskModal .modal-body .visualize').show();
+                $('#newTaskModal .modal-footer #editNewTask').show();
+            },
+
+            newTask: function(e) {
+                var _this = this,
+                    get = $.getJSON(baseUrl + '/users?enabled=true');
+
+                get.done(function(users) {
+                    var $newTask = _this.$el.find('#newTaskModal'),
+                        $assignedTo = $newTask.find('select#assignedTo'),
+                        $visibleTo = $newTask.find('select#visibleTo');
+
+                    $assignedTo.html('');
+                    $visibleTo.html('');
+
+                    users.forEach(function(user) {
+                        $assignedTo.append($('<option />').val(user.id).html(user.name));
+                        $visibleTo.append($('<option />').val(user.id).html(user.name));
+                    });
+
+                    $assignedTo.prepend($('<option />').html('NINGUÉM'));
+                    $visibleTo.prepend($('<option />').val('ALL').html('TODOS'));
+
+                    $newTask.modal('show');
+                });
+
+                get.fail(function() {
+                    showMessage({
+                        type: 'error',
+                        title: 'Erro',
+                        text: 'Algo deu errado...'
+                    });
+                });
             },
 
             listUsers: function(e) {
@@ -652,7 +865,7 @@
                     showMessage({
                         type: 'error',
                         title: 'Erro',
-                        message: 'Algo deu errado...'
+                        text: 'Algo deu errado...'
                     });
                 });
             },
