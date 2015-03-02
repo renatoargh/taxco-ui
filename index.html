@@ -120,6 +120,11 @@
                 <img width="200px" height="113px" src="/img/logotipo-bmsilva.png" alt="B. M. Silva Construções Ltda" />
             </div>
         </div>
+        <div class="row">
+            <div class="col-sm-offset-3 col-sm-6">
+                <strong class="userName"></strong>
+            </div>
+        </div>
         <div class="row formActions">
             <div class="col-sm-offset-3 col-sm-6">
                 <button id="newTask" class="btn btn-primary btn-sm pull-left">
@@ -129,6 +134,10 @@
                 <button id="listUsers" class="btn btn-primary btn-sm pull-left">
                     Usuários&nbsp;
                     <i class="glyphicon glyphicon-user"></i>
+                </button>
+                <button id="logout" class="btn btn-primary btn-sm pull-left">
+                    Sair&nbsp;
+                    <i class="glyphicon glyphicon glyphicon-log-out"></i>
                 </button>
                 <div class="dropdown pull-right">
                   <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="filter" data-toggle="dropdown">
@@ -483,6 +492,7 @@
 
         var TaskView = Backbone.View.extend({
             initialize: function(task) {
+                console.log(JSON.stringify(task, null, 4));
                 this.model = new Backbone.DeepModel(task);
                 this.modelBinder = new Backbone.ModelBinder();
             },
@@ -722,6 +732,14 @@
             template: _.template($('#listTasksTemplate').html()),
             el: '.container',
             _render: function(tasks) {
+                var user = getCurrentUser();
+
+                if(!user) {
+                    router.navigate('/', {
+                        trigger: true
+                    });
+                }
+
                 var _this = this;
                 this.$el.html(this.template());
 
@@ -730,6 +748,7 @@
                     taskView.render(_this.$el.find('#tasks'));
                 });
 
+                this.$el.find('.userName').html(user.name);
                 this.modelBinder.bind(this.model, this.el);
             },
             render: function() {
@@ -754,7 +773,16 @@
                 'click button#newTask': 'newTask',
                 'click #newTaskModal .modal-footer #visualizeNewTask': 'visualizeNewTask',
                 'click #newTaskModal .modal-footer #editNewTask': 'editNewTask',
-                'click #newTaskModal .modal-footer #saveTask': 'saveTask'
+                'click #newTaskModal .modal-footer #saveTask': 'saveTask',
+                'click #logout': 'logout'
+            },
+
+            logout: function(e) {
+                setCurrentUser(null);
+
+                router.navigate('/', {
+                    trigger: true
+                });
             },
 
             saveTask: function(e) {
