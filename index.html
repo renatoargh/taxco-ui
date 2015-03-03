@@ -175,66 +175,7 @@
             </div>
         </div>
         <div class="row" id="tasks"></div>
-        <div class="modal fade" id="newTaskModal" tabindex="-1" role="dialog" aria-labelledby="newTaskModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal">
-                            <span aria-hidden="true">&times;</span>
-                            <span class="sr-only">Fechar</span>
-                        </button>
-
-                        <h4 class="modal-title" id="newTaskModalLabel">
-                            <i class="glyphicon glyphicon-file"></i>&nbsp;
-                            Nova Tarefa
-                        </h4>
-                    </div>
-
-                    <div class="modal-body">
-                        <div class="edit">
-                            <div class="row">
-                                <div class="title form-group col-sm-12">
-                                    <label class="control-label" id="titleLabel" for="title">
-                                        Título
-                                    </label>
-                                    <input class="form-control" type="text" id="title" name="title" placeholder="Título"></input>
-                                </div>
-                                <div class="description form-group col-sm-12">
-                                    <label class="control-label" id="descriptionLabel" for="description">
-                                        Descrição
-                                    </label>
-                                    <textarea name="description" id="description" cols="30" rows="10" class="form-control" placeholder="Descrição"></textarea>
-                                </div>
-
-                                <div class="assignedTo form-group col-sm-6">
-                                    <label class="control-label" id="assignedToLabel" for="assignedTo">
-                                        Atribuído A
-                                    </label>
-                                    <select class="form-control" id="assignedTo" name="assignedToId"></select>
-                                </div>
-                                <div class="visibleTo form-group col-sm-6">
-                                    <label class="control-label" id="visibleToLabel" for="visibleTo">
-                                        Visível Para
-                                    </label>
-                                    <select class="form-control" id="visibleTo" name="visibleToId" multiple></select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="visualize">
-                            <h4 id="taskTitle"></h4>
-                            <span id="taskDescription"></span>
-                        </div>
-                    </div>
-
-                    <div class="modal-footer">
-                        <button id="visualizeNewTask" type="button" class="btn btn-default pull-left">Visualizar</button>
-                        <button id="editNewTask" type="button" class="displayNone btn btn-default pull-left">Editar</button>
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                        <button id="saveTask" type="button" class="btn btn-primary">Salvar</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <div class="modal fade" id="newTaskModal" tabindex="-1" role="dialog" aria-labelledby="newTaskModalLabel" aria-hidden="true"></div>
         <div class="modal fade" id="listUsersModal" tabindex="-1" role="dialog" aria-labelledby="listUsersModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
@@ -271,6 +212,67 @@
                         </span>
                         <button type="button" class="btn btn-primary" data-dismiss="modal">Ok</button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/template" id="taskModalTemplate">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span aria-hidden="true">&times;</span>
+                        <span class="sr-only">Fechar</span>
+                    </button>
+
+                    <h4 class="modal-title" id="newTaskModalLabel">
+                        <i class="glyphicon glyphicon-file"></i>&nbsp;
+                        <%= title %>
+                    </h4>
+                </div>
+
+                <div class="modal-body">
+                    <div class="edit">
+                        <div class="row">
+                            <div class="title form-group col-sm-12">
+                                <label class="control-label" id="titleLabel" for="title">
+                                    Título
+                                </label>
+                                <input class="form-control" type="text" id="title" name="title" placeholder="Título"></input>
+                            </div>
+                            <div class="description form-group col-sm-12">
+                                <label class="control-label" id="descriptionLabel" for="description">
+                                    Descrição
+                                </label>
+                                <textarea name="description" id="description" cols="30" rows="10" class="form-control" placeholder="Descrição"></textarea>
+                            </div>
+
+                            <div class="assignedTo form-group col-sm-6">
+                                <label class="control-label" id="assignedToLabel" for="assignedTo">
+                                    Atribuído A
+                                </label>
+                                <select class="form-control" id="assignedTo" name="assignedToId"></select>
+                            </div>
+                            <div class="visibleTo form-group col-sm-6">
+                                <label class="control-label" id="visibleToLabel" for="visibleTo">
+                                    Visível Para
+                                </label>
+                                <select class="form-control" id="visibleTo" name="visibleToId" multiple></select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="visualize">
+                        <h4 id="taskTitle"></h4>
+                        <span id="taskDescription"></span>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button id="visualizeNewTask" type="button" class="btn btn-default pull-left">Visualizar</button>
+                    <button id="editNewTask" type="button" class="displayNone btn btn-default pull-left">Editar</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                    <button id="saveTask" type="button" class="btn btn-primary">Salvar</button>
                 </div>
             </div>
         </div>
@@ -324,7 +326,7 @@
                     (<span class="createdAtFromNow"></span>)
                 </small>
                 <div class="actions">
-                    <button class="btn btn-xs btn-primary pull-left">
+                    <button class="btn btn-xs btn-primary pull-left edit">
                         Editar&nbsp;
                         <i class="glyphicon glyphicon-pencil"></i>
                     </button>
@@ -332,7 +334,7 @@
                         Comentar&nbsp;
                         <i class="glyphicon glyphicon-comment"></i>
                     </button>
-                    <button class="btn btn-xs btn-danger pull-right">
+                    <button class="btn btn-xs btn-danger pull-right delete">
                         Apagar&nbsp;
                         <i class="glyphicon glyphicon-trash"></i>
                     </button>
@@ -340,6 +342,7 @@
                 </div>
             </span>
         </div>
+        <div class="editTaskModal modal fade" tabindex="-1" role="dialog" aria-labelledby="newTaskModalLabel" aria-hidden="true"></div>
     </script>
 
     <script>
@@ -497,13 +500,32 @@
                 this.modelBinder = new Backbone.ModelBinder();
             },
             template: _.template($('#taskTemplate').html()),
+            taskModalTemplate: _.template($('#taskModalTemplate').html()),
             render: function(container) {
-                var taskContainer = $('<div />'),
+                var user = getCurrentUser(),
+                    taskContainer = $('<div />'),
                     _this = this;
+
+                if(!user) {
+                    router.navigate('/', {
+                        trigger: true
+                    });
+                }
 
                 this.setElement(taskContainer);
                 taskContainer.html(this.template());
+
+                taskContainer.find('.editTaskModal').html(this.taskModalTemplate({
+                    title: 'Editar Tarefa'
+                }));
+
                 container.append(taskContainer);
+
+                if(user.role !== 'admin') {
+                    this.$el.find('button.edit').hide();
+                    this.$el.find('button.delete').hide();
+                }
+
                 this.modelBinder.bind(this.model, this.el, {
                     title: {
                         selector: '.title',
@@ -550,10 +572,16 @@
             },
 
             events: {
-                'click .taskToggler': 'toggleTaskDetails'
+                'click .taskToggler': 'toggleTaskDetails',
+                'click button.edit': 'editTask'
             },
 
             areDetailsHidden: true,
+
+            editTask: function(e) {
+                var $editTaskModal = this.$el.find('.editTaskModal');
+                $editTaskModal.modal('show');
+            },
 
             toggleTaskDetails: function() {
                 var $details = this.$el.find('.details'),
@@ -730,6 +758,7 @@
                 this.modelBinder = new Backbone.ModelBinder();
             },
             template: _.template($('#listTasksTemplate').html()),
+            taskModalTemplate: _.template($('#taskModalTemplate').html()),
             el: '.container',
             _render: function(tasks) {
                 var user = getCurrentUser();
@@ -742,6 +771,14 @@
 
                 var _this = this;
                 this.$el.html(this.template());
+                this.$el.find('#newTaskModal').html(this.taskModalTemplate({
+                    title: 'Nova Tarefa'
+                }));
+
+                if(user.role !== 'admin') {
+                    this.$el.find('button#newTask').hide();
+                    this.$el.find('button#listUsers').hide();
+                }
 
                 tasks.forEach(function(task) {
                     var taskView = new TaskView(task);
@@ -862,6 +899,7 @@
                     $assignedTo.prepend($('<option />').html('NINGUÉM'));
                     $visibleTo.prepend($('<option />').val('ALL').html('TODOS'));
 
+                    $newTask.find('h4.modal-title').html('Nova Tarefa');
                     $newTask.modal('show');
                 });
 
