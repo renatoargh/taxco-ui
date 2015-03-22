@@ -235,26 +235,26 @@
                 <div class="modal-body">
                     <div class="edit">
                         <div class="row">
-                            <div class="title form-group col-sm-12">
+                            <div class="form-group col-sm-12">
                                 <label class="control-label" id="titleLabel" for="title">
                                     Título
                                 </label>
                                 <input class="form-control" type="text" id="title" name="title" placeholder="Título"></input>
                             </div>
-                            <div class="description form-group col-sm-12">
+                            <div class="form-group col-sm-12">
                                 <label class="control-label" id="descriptionLabel" for="description">
                                     Descrição
                                 </label>
                                 <textarea name="description" id="description" cols="30" rows="10" class="form-control" placeholder="Descrição"></textarea>
                             </div>
 
-                            <div class="assignedTo form-group col-sm-6">
+                            <div class="form-group col-sm-6">
                                 <label class="control-label" id="assignedToLabel" for="assignedTo">
                                     Atribuído A
                                 </label>
                                 <select class="form-control" id="assignedTo" name="assignedToId"></select>
                             </div>
-                            <div class="visibleTo form-group col-sm-6">
+                            <div class="form-group col-sm-6">
                                 <label class="control-label" id="visibleToLabel" for="visibleTo">
                                     Visível Para
                                 </label>
@@ -341,8 +341,8 @@
                     <br style="clear: both;" />
                 </div>
             </span>
+            <div class="editTaskModal modal fade" tabindex="-1" role="dialog" aria-hidden="true"></div>
         </div>
-        <div class="editTaskModal modal fade" tabindex="-1" role="dialog" aria-labelledby="newTaskModalLabel" aria-hidden="true"></div>
     </script>
 
     <script>
@@ -495,7 +495,6 @@
 
         var TaskView = Backbone.View.extend({
             initialize: function(task) {
-                console.log(JSON.stringify(task, null, 4));
                 this.model = new Backbone.DeepModel(task);
                 this.modelBinder = new Backbone.ModelBinder();
             },
@@ -507,30 +506,35 @@
                     _this = this;
 
                 if(!user) {
-                    router.navigate('/', {
+                    return router.navigate('/', {
                         trigger: true
                     });
                 }
 
                 this.setElement(taskContainer);
-                taskContainer.html(this.template());
-
-                taskContainer.find('.editTaskModal').html(this.taskModalTemplate({
+                container.append(taskContainer);
+                this.$el.html(this.template());
+                this.$el.find('.editTaskModal').html(this.taskModalTemplate({
                     title: 'Editar Tarefa'
                 }));
-
-                container.append(taskContainer);
 
                 if(user.role !== 'admin') {
                     this.$el.find('button.edit').hide();
                     this.$el.find('button.delete').hide();
                 }
 
-                this.modelBinder.bind(this.model, this.el, {
-                    title: {
-                        selector: '.title',
-                        elAtributte: 'html'
-                    },
+                this.modelBinder.bind(this.model, this.$el, {
+                    title: [{
+                        selector: 'span.title',
+                        elAttribute: 'html'
+                    }, {
+                        selector: 'input#title',
+                        converter: function(direction, value) {
+                            _this.$el.find('.editTaskModal').find('input#title').val('ALOHA');
+
+                            return value;
+                        }
+                    }],
                     isOpen: [{
                         selector: '.isOpen',
                         elAttribute: 'class',
@@ -546,15 +550,18 @@
                     }],
                     'owner.name': {
                         selector: '.owner',
-                        elAtributte: 'html'
+                        elAttribute: 'html'
                     },
-                    description: {
-                        selector: '.description',
+                    description: [{
+                        selector: 'div.description',
                         elAttribute: 'html',
                         converter: function(direction, value) {
                             return marked(value);
                         }
-                    },
+                    }, {
+                        selector: 'textarea#description',
+                        elAttribute: 'html'
+                    }],
                     createdAt: [{
                         selector: '.createdAt',
                         elAttribute: 'html',
@@ -579,7 +586,21 @@
             areDetailsHidden: true,
 
             editTask: function(e) {
-                var $editTaskModal = this.$el.find('.editTaskModal');
+                var _this = this,
+                    editModelBinder,
+                    $editTaskModal = this.$el.find('.editTaskModal');
+
+                $editTaskModal.on('shown.bs.modal', function() {
+                    editModelBinder = new Backbone.ModelBinder();
+                    editModelBinder.bind(_this.model, $editTaskModal, {
+                        title: 'input#title'
+                    });
+                });
+
+                $editTaskModal.on('shown.bs.hidden', function() {
+                    editModelBinder.unbind();
+                });
+
                 $editTaskModal.modal('show');
             },
 
@@ -614,7 +635,7 @@
                 this.modelBinder.bind(this.model, this.el, {
                     name: [{
                         selector: '.visualize.name',
-                        elAtributte: 'html',
+                        elAttribute: 'html',
                         converter: function(direction, value) {
                             return value;
                         }
@@ -630,7 +651,7 @@
                     }],
                     email: [{
                         selector: '.visualize.email',
-                        elAtributte: 'html',
+                        elAttribute: 'html',
                         converter: function(direction, value) {
                             return value;
                         }
@@ -646,10 +667,18 @@
                     }],
                     enabled: [{
                         selector: '.visualize.enabled',
-                        elAtributte: 'html',
+                        elAttribute: 'html',
                         converter: function(direction, value) {
                             if(direction === 'ModelToView') {
                                 return value ? 'SIM' : 'NÃO'
+                            }
+                        }
+                    }, {
+                        selector: '.visualize.enabled',
+                        elAttribute: 'class',
+                        converter: function(direction, value) {
+                            if(direction === 'ModelToView') {
+                                return value ? 'text-success' : 'text-danger'
                             }
                         }
                     }, {
@@ -668,7 +697,7 @@
                     }],
                     role: [{
                         selector: '.visualize.role',
-                        elAtributte: 'html',
+                        elAttribute: 'html',
                         converter: function(direction, value) {
                             if(direction === 'ModelToView') {
                                 return {
@@ -695,7 +724,7 @@
                     }],
                     lastInteraction: {
                         selector: 'span.lastInteraction',
-                        elAtributte: 'html',
+                        elAttribute: 'html',
                         converter: function(direction, value) {
                             if(!value) {
                                 return;
@@ -823,8 +852,6 @@
             },
 
             saveTask: function(e) {
-                console.log(JSON.stringify(this.model, null, 4));
-
                 var _this = this,
                     post = $.ajax({
                         url: baseUrl + '/tasks',
@@ -858,25 +885,25 @@
             },
 
             editNewTask: function(e) {
-                $('#newTaskModal .modal-body .edit').show();
-                $('#newTaskModal .modal-footer #visualizeNewTask').show();
+                this.$el.find('#newTaskModal .modal-body .edit').show();
+                this.$el.find('#newTaskModal .modal-footer #visualizeNewTask').show();
 
-                $('#newTaskModal .modal-body .visualize').hide();
-                $('#newTaskModal .modal-footer #editNewTask').hide();
+                this.$el.find('#newTaskModal .modal-body .visualize').hide();
+                this.$el.find('#newTaskModal .modal-footer #editNewTask').hide();
             },
 
             visualizeNewTask: function(e) {
                 var title = this.model.get('title'),
                     description = this.model.get('description');
 
-                $('#newTaskModal .modal-body #taskTitle').html(title);
-                $('#newTaskModal .modal-body #taskDescription').html(marked(description || ''));
+                this.$el.find('#newTaskModal .modal-body #taskTitle').html(title);
+                this.$el.find('#newTaskModal .modal-body #taskDescription').html(marked(description || ''));
 
-                $('#newTaskModal .modal-body .edit').hide();
-                $('#newTaskModal .modal-footer #visualizeNewTask').hide();
+                this.$el.find('#newTaskModal .modal-body .edit').hide();
+                this.$el.find('#newTaskModal .modal-footer #visualizeNewTask').hide();
 
-                $('#newTaskModal .modal-body .visualize').show();
-                $('#newTaskModal .modal-footer #editNewTask').show();
+                this.$el.find('#newTaskModal .modal-body .visualize').show();
+                this.$el.find('#newTaskModal .modal-footer #editNewTask').show();
             },
 
             newTask: function(e) {
