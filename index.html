@@ -527,13 +527,6 @@
                     title: [{
                         selector: 'span.title',
                         elAttribute: 'html'
-                    }, {
-                        selector: 'input#title',
-                        converter: function(direction, value) {
-                            _this.$el.find('.editTaskModal').find('input#title').val('ALOHA');
-
-                            return value;
-                        }
                     }],
                     isOpen: [{
                         selector: '.isOpen',
@@ -552,16 +545,13 @@
                         selector: '.owner',
                         elAttribute: 'html'
                     },
-                    description: [{
+                    description: {
                         selector: 'div.description',
                         elAttribute: 'html',
                         converter: function(direction, value) {
                             return marked(value);
                         }
-                    }, {
-                        selector: 'textarea#description',
-                        elAttribute: 'html'
-                    }],
+                    },
                     createdAt: [{
                         selector: '.createdAt',
                         elAttribute: 'html',
@@ -587,21 +577,112 @@
 
             editTask: function(e) {
                 var _this = this,
+                    taskBackUp = _.extend({}, this.model.attributes),
+                    saved = false,
                     editModelBinder,
-                    $editTaskModal = this.$el.find('.editTaskModal');
+                    $editTaskModal = this.$el.find('.editTaskModal'),
+                    getEnabledUsers = $.getJSON(baseUrl + '/users?enabled=true'),
+                    getTask = $.getJSON(baseUrl + '/tasks/' + _this.model.get('id')),
+                    when = $.when(getEnabledUsers, getTask);
 
-                $editTaskModal.on('shown.bs.modal', function() {
-                    editModelBinder = new Backbone.ModelBinder();
-                    editModelBinder.bind(_this.model, $editTaskModal, {
-                        title: 'input#title'
+                when.done(function(users, task) {
+                    users = users[0];
+                    task = task[0];
+
+                    task.visibleToId = task.visibleTo.map(function(user) {
+                        return user.id;
+                    });
+
+                    if(task.isPublic) {
+                        task.visibleToId.push('ALL');
+                    }
+
+                    _this.model.set('visibleToId', task.visibleToId);
+
+                    var $assignedTo = $editTaskModal.find('select#assignedTo'),
+                        $visibleTo = $editTaskModal.find('select#visibleTo'),
+                        $saveTask = $editTaskModal.find('button#saveTask');
+
+                    $assignedTo.html('');
+                    $visibleTo.html('');
+
+                    users.forEach(function(user) {
+                        $assignedTo.append($('<option />').val(user.id).html(user.name));
+                        $visibleTo.append($('<option />').val(user.id).html(user.name));
+                    });
+
+                    $assignedTo.prepend($('<option />').val('').html('NINGUÉM'));
+                    $visibleTo.prepend($('<option />').val('ALL').html('TODOS'));
+
+                    $editTaskModal.on('shown.bs.modal', function() {
+                        editModelBinder = new Backbone.ModelBinder();
+                        editModelBinder.bind(_this.model, $editTaskModal, {
+                            title: 'input#title',
+                            description: 'textarea#description',
+                            visibleToId: 'select#visibleTo',
+                            assignedToId: {
+                                selector: 'select#assignedTo',
+                                converter: function(direction, value) {
+                                    if(direction === 'ModelToView') {
+                                        if(value === null) {
+                                            return '';
+                                        }
+
+                                        return value;
+                                    } else {
+                                        if(value === '') {
+                                            return null;
+                                        }
+
+                                        return value;
+                                    }
+                                }
+                            }
+                        });
+                    });
+
+                    $saveTask.on('click', function() {
+                        var put = $.ajax({
+                            url: baseUrl + '/tasks/' + _this.model.get('id'),
+                            type: 'PUT',
+                            data: _this.model.attributes
+                        });
+
+                        put.done(function() {
+                            saved = true;
+                        });
+
+                        put.fail(function() {
+                            showMessage({
+                                type: 'error',
+                                title: 'Erro',
+                                text: 'Algo deu errado...'
+                            });
+                        });
+
+                        put.complete(function() {
+                            $editTaskModal.modal('hide');
+                        });
+                    });
+
+                    $editTaskModal.on('hidden.bs.modal', function() {
+                        if(saved === false) {
+                            _this.model.set(taskBackUp);
+                        }
+
+                        editModelBinder.unbind();
+                    });
+
+                    $editTaskModal.modal('show');
+                });
+
+                when.fail(function() {
+                    showMessage({
+                        type: 'error',
+                        title: 'Erro',
+                        text: 'Algo deu errado...'
                     });
                 });
-
-                $editTaskModal.on('shown.bs.hidden', function() {
-                    editModelBinder.unbind();
-                });
-
-                $editTaskModal.modal('show');
             },
 
             toggleTaskDetails: function() {
@@ -625,7 +706,7 @@
             },
             template: _.template($('#userTemplate').html()),
             render: function() {
-                var rootElement = $('<tr class="user"/>');
+                var rootElement = $('<tr class="user" />');
                 rootElement.one('click', this.toggleMode.bind(this));
 
                 this.setElement(rootElement);
