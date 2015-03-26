@@ -1,0 +1,19 @@
+{
+  "name": "taxco-ui",
+  "version": "1.0.0",
+  "description": "User interface for Taxco",
+  "main": "index.html",
+  "scripts": {
+    "test": "exit 0;"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/renatoargh/taxco-ui.git"
+  },
+  "author": "Renato Gama <renato@gammasoft.com.br>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/renatoargh/taxco-ui/issues"
+  },
+  "homepage": "https://github.com/renatoargh/taxco-ui"
+}
