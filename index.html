@@ -20,6 +20,7 @@
     <script type="application/javascript" src="/js/moment.min.js"></script>
     <script type="application/javascript" src="/js/momentPtBr.js"></script>
     <script type="application/javascript" src="/js/marked.min.js"></script>
+    <script type="application/javascript" src="/js/bootbox.min.js"></script>
 
     <script type="text/template" id="logInTemplate">
         <div class="row logotipo">
@@ -235,11 +236,21 @@
                 <div class="modal-body">
                     <div class="edit">
                         <div class="row">
-                            <div class="form-group col-sm-12">
+                            <div class="form-group col-sm-10">
                                 <label class="control-label" id="titleLabel" for="title">
                                     Título
                                 </label>
                                 <input class="form-control" type="text" id="title" name="title" placeholder="Título"></input>
+                            </div>
+                            <div class="isOpenFormGroup form-group col-sm-2">
+                                <label class="control-label" id="isOpenLabel" for="isOpen">
+                                    Status
+                                </label>
+                                <select class="form-control" type="text" id="isOpen" name="isOpen" placeholder="Status"></input>
+                                    <option value="true">ABERTA</option>
+                                    <option value="false">FECHADA</option>
+                                </select>
+                                <span class="help-block"></span>
                             </div>
                             <div class="form-group col-sm-12">
                                 <label class="control-label" id="descriptionLabel" for="description">
@@ -250,7 +261,7 @@
 
                             <div class="form-group col-sm-6">
                                 <label class="control-label" id="assignedToLabel" for="assignedTo">
-                                    Atribuído A
+                                    Reponsável
                                 </label>
                                 <select class="form-control" id="assignedTo" name="assignedToId"></select>
                             </div>
@@ -320,10 +331,13 @@
                 <div class="description"></div>
                 <small class="text-muted">
                     Criado por
-                    <span class="owner text-muted"></span>
+                    <strong>
+                        <span class="owner text-muted" />
+                    </strong>
                     em
                     <span class="createdAt"></span>
-                    (<span class="createdAtFromNow"></span>)
+                    (<span class="createdAtFromNow"></span>).
+                    Atribuído a <strong><span class="assignedTo" /></strong>.
                 </small>
                 <div class="actions">
                     <button class="btn btn-xs btn-primary pull-left edit">
@@ -347,9 +361,77 @@
 
     <script>
     $(function() {
-        var baseUrl = 'http://localhost:9090';
+        function eLocalhost() {
+            return [
+                'localhost'
+            ].indexOf(window.location.hostname) > -1;
+        }
+
+        var baseUrl = 'http://api.sisgest.bmsilva.com.br';
+
+        if(eLocalhost()) {
+            baseUrl = 'http://localhost:9090';
+        }
+
+        function showConfirm(message, callback) {
+            bootbox.confirm([
+                '<h3>Confirmação</h3>',
+                message
+            ].join(''), callback);
+        }
+
+        function showSuccess(message, title) {
+            return showMessage({
+                text: message || '',
+                title: title || 'Sucesso',
+                type: 'success'
+            });
+        }
+
+        var mensagemDeErroPadrao = 'Um erro ocorreu!';
+        function showError(message, title) {
+            console.log(arguments);
+
+            if(typeof message === 'undefined' || typeof message === 'object') {
+                if(title === 'canceled') {
+                    // Mensagem de erro proveniente de cancelamento do ajax, não é necessário exibir
+                    return;
+                }
+
+                if(message && message.responseJSON && message.responseJSON.message && message.responseJSON.message !== '') {
+                    message = message.responseJSON.message;
+                } else if(message && message.statusText && message.statusText === 'canceled') {
+                    // Mensagem de erro proveniente de cancelamento do ajax, não é necessário exibir
+                    return;
+                } else {
+                    message = mensagemDeErroPadrao;
+                }
+            }
+
+            if(typeof title === 'undefined' || title === 'error' || typeof title !== 'string') {
+                title = 'Erro';
+            }
+
+            return showMessage({
+                text: message || mensagemDeErroPadrao,
+                title: title || 'Erro',
+                type: 'error'
+            });
+        }
+
+        function showInfo(message, title) {
+            return showMessage({
+                text: message || '',
+                title: title || 'Informação',
+                type: 'info'
+            });
+        }
 
         function showMessage(params) {
+            if(!params.message) {
+                console.warn && console.warn('Não foi informada uma mensagem para a notificação');
+            }
+
             return $.gritter.add({
                 title: params.title || '',
                 text: params.text || '',
@@ -500,6 +582,10 @@
             },
             template: _.template($('#taskTemplate').html()),
             taskModalTemplate: _.template($('#taskModalTemplate').html()),
+            close: function() {
+                // remover views filhas se houver
+                this.modelBinder.unbind();
+            },
             render: function(container) {
                 var user = getCurrentUser(),
                     taskContainer = $('<div />'),
@@ -545,6 +631,13 @@
                         selector: '.owner',
                         elAttribute: 'html'
                     },
+                    'assignedTo.name': {
+                        selector: 'span.assignedTo',
+                        elAttribute: 'html',
+                        converter: function(direction, value) {
+                            return value ? value : 'NINGUÉM';
+                        }
+                    },
                     description: {
                         selector: 'div.description',
                         elAttribute: 'html',
@@ -570,20 +663,66 @@
 
             events: {
                 'click .taskToggler': 'toggleTaskDetails',
-                'click button.edit': 'editTask'
+                'click button.edit': 'editTask',
+                'click button.delete': 'deleteTask'
             },
 
             areDetailsHidden: true,
+
+            deleteTask: function(e) {
+                var _this = this;
+
+                showConfirm([
+                    'Deseja realmente apagar a tarefa "<strong>',
+                    this.model.get('title'),
+                    '"</strong> e todos os dados associados a ela?<br />',
+                    'Esta ação não pode ser desfeita!'
+                ].join(''), function(resultado) {
+                    if(!resultado) {
+                        return;
+                    }
+
+                    var del = $.ajax({
+                        url: baseUrl + '/tasks/' + _this.model.get('id'),
+                        type: 'DELETE'
+                    });
+
+                    del.done(function() {
+                        showSuccess('Tarefa apagada com êxito!');
+                        _this.close();
+                        _this.$el.remove();
+                    });
+
+                    del.fail(showError);
+                });
+            },
 
             editTask: function(e) {
                 var _this = this,
                     taskBackUp = _.extend({}, this.model.attributes),
                     saved = false,
+                    currentMode = 'visualize',
                     editModelBinder,
                     $editTaskModal = this.$el.find('.editTaskModal'),
+                    $visualize = $editTaskModal.find('#visualizeNewTask'),
                     getEnabledUsers = $.getJSON(baseUrl + '/users?enabled=true'),
                     getTask = $.getJSON(baseUrl + '/tasks/' + _this.model.get('id')),
                     when = $.when(getEnabledUsers, getTask);
+
+                function toggleMode() {
+                    if(currentMode === 'visualize') {
+                        _this.$el.find('.edit').show();
+                        _this.$el.find('.visualize').hide();
+                        currentMode = 'edit';
+                    } else {
+                        _this.$el.find('.edit').hide();
+                        _this.$el.find('.visualize').show();
+                        currentMode = 'visualize';
+                    }
+                }
+
+                toggleMode();
+                $visualize.on('click', toggleMode);
 
                 when.done(function(users, task) {
                     users = users[0];
@@ -598,6 +737,7 @@
                     }
 
                     _this.model.set('visibleToId', task.visibleToId);
+                    _this.model.set('isOpen', task.isOpen);
 
                     var $assignedTo = $editTaskModal.find('select#assignedTo'),
                         $visibleTo = $editTaskModal.find('select#visibleTo'),
@@ -618,16 +758,33 @@
                         editModelBinder = new Backbone.ModelBinder();
                         editModelBinder.bind(_this.model, $editTaskModal, {
                             title: 'input#title',
-                            description: 'textarea#description',
+                            isOpen: {
+                                selector: 'select#isOpen',
+                                converter: function(direction, value) {
+                                    if(direction === 'ModelToView') {
+                                        return value.toString();
+                                    } else {
+                                        return value === true;
+                                    }
+                                }
+                            },
+                            description: [{
+                                selector: 'textarea#description',
+                                converter: function(direction, value) {
+                                    return value;
+                                }
+                            }, {
+                                selector: '#taskDescription',
+                                elAttribute: 'html',
+                                converter: function(direction, value) {
+                                    return marked(value);
+                                }
+                            }],
                             visibleToId: 'select#visibleTo',
                             assignedToId: {
                                 selector: 'select#assignedTo',
                                 converter: function(direction, value) {
                                     if(direction === 'ModelToView') {
-                                        if(value === null) {
-                                            return '';
-                                        }
-
                                         return value;
                                     } else {
                                         if(value === '') {
@@ -670,6 +827,7 @@
                             _this.model.set(taskBackUp);
                         }
 
+                        $editTaskModal.off();
                         editModelBinder.unbind();
                     });
 
@@ -864,7 +1022,6 @@
 
         var ListTasksView = Backbone.View.extend({
             initialize: function() {
-                this.model = new Backbone.Model();
                 this.modelBinder = new Backbone.ModelBinder();
             },
             template: _.template($('#listTasksTemplate').html()),
@@ -880,6 +1037,7 @@
                 }
 
                 var _this = this;
+                this.$el.empty();
                 this.$el.html(this.template());
                 this.$el.find('#newTaskModal').html(this.taskModalTemplate({
                     title: 'Nova Tarefa'
@@ -896,11 +1054,15 @@
                 });
 
                 this.$el.find('.userName').html(user.name);
+
+                this.modelBinder.unbind();
                 this.modelBinder.bind(this.model, this.el);
             },
             render: function() {
                 var _this = this,
                     get = $.getJSON(baseUrl + '/tasks');
+
+                this.model = new Backbone.Model();
 
                 get.done(function(tasks) {
                     _this._render(tasks);
@@ -941,7 +1103,8 @@
                             'title',
                             'description',
                             'assignedToId',
-                            'visibleToId'
+                            'visibleToId',
+                            'isOpen'
                         ])
                     });
 
@@ -954,6 +1117,8 @@
                         title: 'Sucesso',
                         text: 'Tarefa salva!'
                     });
+
+                    _this.render();
                 });
 
                 post.fail(function() {
@@ -994,10 +1159,13 @@
                 get.done(function(users) {
                     var $newTask = _this.$el.find('#newTaskModal'),
                         $assignedTo = $newTask.find('select#assignedTo'),
+                        $isOpen = $newTask.find('select#isOpen'),
                         $visibleTo = $newTask.find('select#visibleTo');
 
                     $assignedTo.html('');
                     $visibleTo.html('');
+                    $isOpen.val('true');
+                    _this.model.set('isOpen', 'true');
 
                     users.forEach(function(user) {
                         $assignedTo.append($('<option />').val(user.id).html(user.name));
