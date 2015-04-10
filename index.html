@@ -128,7 +128,7 @@
                 <div class="media">
                     <div class="media-left">
                         <a href="#">
-                            <img class="media-object img-rounded" width="64px" height="64px" src="<%= gravatar %>" alt="<%= owner.name %>">
+                            <img class="media-object img-rounded" width="32px" height="32px" src="<%= gravatar %>" alt="<%= owner.name %>">
                         </a>
                     </div>
                     <div class="media-body">
@@ -401,6 +401,10 @@
             return [
                 'localhost'
             ].indexOf(window.location.hostname) > -1;
+        }
+
+        function gravatar(emailMd5, options) {
+            return 'http://gravatar.com/avatar/' + emailMd5 + '?d=identicon&f=y';
         }
 
         var baseUrl = 'http://api.sisgest.bmsilva.com.br';
@@ -763,6 +767,19 @@
 
                     put.done(function() {
                         showSuccess('Comentário registrado com sucesso!');
+
+                        var $comments = _this.$el.find('.comments'),
+                            currentUser = getCurrentUser() || {},
+                            comment = {
+                                owner: {
+                                    name: currentUser.name || '',
+                                },
+                                content: commentText,
+                                createdAt: new Date(),
+                                gravatar: gravatar(currentUser.emailMd5 || '')
+                            }
+
+                        $comments.append(_this.commentTemplate(comment));
                     });
 
                     put.fail(showError);
@@ -948,10 +965,6 @@
                     $task = this.$el.find('.task'),
                     $details = this.$el.find('.details'),
                     $icon = this.$el.find('.taskToggler i.glyphicon');
-
-                function gravatar(emailMd5, options) {
-                    return 'http://gravatar.com/avatar/' + emailMd5 + '?d=identicon';
-                }
 
                 if(!this.model.get('commentsLoaded')) {
                     var get = $.getJSON(baseUrl + '/tasks/' + _this.model.get('id') + '/comments');

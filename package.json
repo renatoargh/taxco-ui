@@ -1,6 +1,6 @@
 {
   "name": "taxco-ui",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "User interface for Taxco",
   "main": "index.html",
   "scripts": {
