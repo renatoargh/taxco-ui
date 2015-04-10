@@ -89,6 +89,13 @@
                                 <input class="form-control" type="text" id="email" name="email" placeholder="Email"></input>
                                 <span class="help-block"></span>
                             </div>
+                            <div class="telefone form-group col-sm-12">
+                                <label class="control-label" id="telefoneLabel" for="telefone">
+                                    Telefone (com DDD)
+                                </label>
+                                <input class="form-control" type="text" maxlength="10" id="telefone" name="telefone" placeholder="Telefone (com DDD)"></input>
+                                <span class="help-block"></span>
+                            </div>
                             <div class="password form-group col-sm-12">
                                 <label class="control-label" id="passwordLabel" for="password">
                                     Senha
@@ -198,6 +205,7 @@
                                 <tr>
                                     <th>Nome</th>
                                     <th>Email</th>
+                                    <th>Telefone</th>
                                     <th>Perfil</th>
                                     <th>Habilitado</th>
                                     <th>Última Interação</th>
@@ -290,15 +298,19 @@
     </script>
 
     <script type="text/template" id="userTemplate">
-        <td width="27%" class="name">
+        <td width="24%" class="name">
             <span class="visualize name"></span>
             <input type="text" width="100%" maxlength="75" class="edit name"></input>
         </td>
-        <td width="27%" class="email">
+        <td width="22%" class="email">
             <span class="email visualize"></span>
             <input type="text" width="100%" maxlength="50" class="email edit"></input>
         </td>
-        <td width="15%" class="role">
+        <td width="12%" class="telefone">
+            <span class="telefone visualize"></span>
+            <input type="text" maxlength="10" width="100%" maxlength="50" class="telefone edit"></input>
+        </td>
+        <td width="12%" class="role">
             <span class="role visualize"></span>
             <select class="role edit">
                 <option value="user">Usuário</option>
@@ -312,7 +324,7 @@
                 <option value="false">NÃO</option>
             </select>
         </td>
-        <td width="21%" class="lastInteraction">
+        <td width="20%" class="lastInteraction">
             <span class="lastInteraction visualize"></span>
             <button class="save edit btn btn-xs btn-primary">
                 Salvar&nbsp;
@@ -324,12 +336,12 @@
         <div class="task col-sm-offset-3 col-sm-6">
             <h4 class="taskToggler">
                 <i class="glyphicon glyphicon-chevron-right"></i>&nbsp;
-                <span class="title"></span>&nbsp;
-                <span class="isOpen"></span>
+                <span class="title"></span>
             </h4>
             <span class="details hidden">
                 <div class="description"></div>
                 <small class="text-muted">
+                    <span class="isOpen"></span>&nbsp;
                     Criado por
                     <strong>
                         <span class="owner text-muted" />
@@ -337,16 +349,20 @@
                     em
                     <span class="createdAt"></span>
                     (<span class="createdAtFromNow"></span>).
-                    Atribuído a <strong><span class="assignedTo" /></strong>.
+                    <span class="assignedTo" />
                 </small>
                 <div class="actions">
                     <button class="btn btn-xs btn-primary pull-left edit">
                         Editar&nbsp;
                         <i class="glyphicon glyphicon-pencil"></i>
                     </button>
-                    <button class="btn btn-xs btn-primary pull-left">
+                    <button class="btn btn-xs btn-primary pull-left comment">
                         Comentar&nbsp;
                         <i class="glyphicon glyphicon-comment"></i>
+                    </button>
+                    <button class="btn btn-xs btn-primary pull-left notify">
+                        Notificar&nbsp;
+                        <i class="glyphicon glyphicon-bullhorn"></i>
                     </button>
                     <button class="btn btn-xs btn-danger pull-right delete">
                         Apagar&nbsp;
@@ -371,6 +387,10 @@
 
         if(eLocalhost()) {
             baseUrl = 'http://localhost:9090';
+        }
+
+        function showPrompt(message, callback) {
+            bootbox.prompt(message, callback);
         }
 
         function showConfirm(message, callback) {
@@ -454,6 +474,10 @@
             localStorage.setItem('currentUser', currentUser);
         }
 
+        function logoutUser() {
+            localStorage.removeItem('currentUser');
+        }
+
         $.ajaxSetup({
             beforeSend: function(xhr, settings) {
                 var user = getCurrentUser(),
@@ -490,7 +514,8 @@
                         user.get('password')
                     ].join(':'));
 
-                setCurrentUser(null);
+                // setCurrentUser(null);
+                logoutUser();
 
                 var get = $.ajax({
                     type: 'GET',
@@ -529,7 +554,8 @@
                 var $signUpModal = $('#signUpModal'),
                     _this = this;
 
-                setCurrentUser(null);
+                // setCurrentUser(null);
+                logoutUser();
 
                 if(this.model.get('password') !== this.model.get('passwordConfirmation')) {
                     return showMessage({
@@ -541,7 +567,7 @@
                 var post = $.ajax({
                     type: 'POST',
                     url: baseUrl + '/users',
-                    data: _.pick(this.model.attributes, 'name', 'email', 'password')
+                    data: _.pick(this.model.attributes, 'name', 'email', 'telefone', 'password')
                 });
 
                 post.done(function() {
@@ -552,6 +578,7 @@
                         name: '',
                         email: '',
                         password: '',
+                        telefone: '',
                         passwordConfirmation: ''
                     });
 
@@ -607,6 +634,7 @@
                 if(user.role !== 'admin') {
                     this.$el.find('button.edit').hide();
                     this.$el.find('button.delete').hide();
+                    this.$el.find('button.notify').hide();
                 }
 
                 this.modelBinder.bind(this.model, this.$el, {
@@ -635,7 +663,7 @@
                         selector: 'span.assignedTo',
                         elAttribute: 'html',
                         converter: function(direction, value) {
-                            return value ? value : 'NINGUÉM';
+                            return value ? ('Atribuído a <strong>' + value + '<strong />.') : '';
                         }
                     },
                     description: {
@@ -664,10 +692,58 @@
             events: {
                 'click .taskToggler': 'toggleTaskDetails',
                 'click button.edit': 'editTask',
-                'click button.delete': 'deleteTask'
+                'click button.delete': 'deleteTask',
+                'click button.comment': 'commentTask',
+                'click button.notify': 'notifyUsers'
             },
 
             areDetailsHidden: true,
+
+            notifyUsers: function(e) {
+                e.preventDefault();
+
+                var _this = this;
+
+                showConfirm('Deseja realmente notificar os usuário envolvidos nesta tarefa?', function(resultado) {
+                    if(!resultado) {
+                        return;
+                    }
+
+                    var put = $.ajax({
+                        url: baseUrl + '/tasks/' + _this.model.get('id') + '/notify',
+                        type: 'PUT'
+                    });
+
+                    put.done(function() {
+                        showSuccess('Notificações enviadas!');
+                    });
+
+                    put.fail(showError);
+                });
+            },
+
+            commentTask: function(e) {
+                e.preventDefault();
+
+                var _this = this;
+
+                showPrompt('Deixe seu comentário', function(commentText) {
+                    if(!commentText) {
+                        return;
+                    }
+
+                    var put = $.ajax({
+                        url: baseUrl + '/tasks/' + _this.model.get('id') + '/comments',
+                        type: 'PUT'
+                    });
+
+                    put.done(function() {
+                        showSuccess('Comentário registrado com sucesso!');
+                    });
+
+                    put.fail(showError);
+                });
+            },
 
             deleteTask: function(e) {
                 var _this = this;
@@ -904,6 +980,32 @@
                             }
                         }
                     }],
+                    telefone: [{
+                        selector: '.visualize.telefone',
+                        elAttribute: 'html',
+                        converter: function(direction, value) {
+                            function formatarTelefone(texto) {
+                                if(!texto || texto.length < 10) {
+                                    return texto;
+                                }
+
+                                texto = texto.trim().replace(/\(/g, "").replace(/\)/g, "").replace(/\s/g, "").replace(/-/g, "");
+                                var i = (texto.length === 11 ? 1 : 0);
+                                return "(" + texto.substr(0, 2) + ") " + texto.substr(2, 4 + i) + "-" + texto.substr(6 + i, 4);
+                            }
+
+                            return formatarTelefone(value);
+                        }
+                    }, {
+                        selector: '.edit.telefone',
+                        converter: function(direction, value) {
+                            if(direction === 'ModelToView') {
+                                return value || '';
+                            } else {
+                                return value.trim();
+                            }
+                        }
+                    }],
                     enabled: [{
                         selector: '.visualize.enabled',
                         elAttribute: 'html',
@@ -1087,7 +1189,8 @@
             },
 
             logout: function(e) {
-                setCurrentUser(null);
+                // setCurrentUser(null);
+                logoutUser();
 
                 router.navigate('/', {
                     trigger: true
