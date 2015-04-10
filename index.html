@@ -122,6 +122,24 @@
         </div>
     </script>
 
+    <script type="text/template" id="commentTemplate">
+        <div class="row" style="margin-bottom: 10px;">
+            <div class="col-sm-12">
+                <div class="media">
+                    <div class="media-left">
+                        <a href="#">
+                            <img class="media-object" width="64px" height="64px" src="<%= gravatar %>" alt="<%= owner.name %>">
+                        </a>
+                    </div>
+                    <div class="media-body">
+                        <h5 class="media-heading"><%= owner.name %> em <%= moment(createdAt).format('DD/MM/YYYY HH:mm:ss') %> (<%= moment(createdAt).fromNow() %>)</h5>
+                        <%= content %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </script>
+
     <script type="text/template" id="listTasksTemplate">
         <div class="row logotipo">
             <div class="col-sm-12 text-center">
@@ -340,6 +358,7 @@
             </h4>
             <span class="details hidden">
                 <div class="description"></div>
+                <div class="comments"></div>
                 <small class="text-muted">
                     <span class="isOpen"></span>&nbsp;
                     Criado por
@@ -608,6 +627,7 @@
                 this.modelBinder = new Backbone.ModelBinder();
             },
             template: _.template($('#taskTemplate').html()),
+            commentTemplate: _.template($('#commentTemplate').html()),
             taskModalTemplate: _.template($('#taskModalTemplate').html()),
             close: function() {
                 // remover views filhas se houver
@@ -734,7 +754,10 @@
 
                     var put = $.ajax({
                         url: baseUrl + '/tasks/' + _this.model.get('id') + '/comments',
-                        type: 'PUT'
+                        type: 'PUT',
+                        data: {
+                            content: commentText
+                        }
                     });
 
                     put.done(function() {
@@ -920,13 +943,38 @@
             },
 
             toggleTaskDetails: function() {
-                var $details = this.$el.find('.details'),
+                var _this = this,
+                    $task = this.$el.find('.task'),
+                    $details = this.$el.find('.details'),
                     $icon = this.$el.find('.taskToggler i.glyphicon');
 
+                function gravatar(emailMd5, options) {
+                    return 'http://gravatar.com/avatar/' + emailMd5 + '?d=identicon';
+                }
+
+                if(!this.model.get('commentsLoaded')) {
+                    var get = $.getJSON(baseUrl + '/tasks/' + _this.model.get('id') + '/comments');
+
+                    get.done(function(comments) {
+                        var $comments = _this.$el.find('.comments');
+
+                        comments.forEach(function(comment) {
+                            comment.gravatar = gravatar(comment.owner.emailMd5);
+                            $comments.append(_this.commentTemplate(comment));
+                        });
+                    });
+
+                    get.fail(showError);
+
+                    this.model.set('commentsLoaded', true);
+                }
+
                 $details.toggleClass('hidden', !this.areDetailsHidden);
+                $task.toggleClass('opened-task', !this.areDetailsHidden);
                 $icon.toggleClass('glyphicon-chevron-right', !this.areDetailsHidden);
 
                 $details.toggleClass('show', this.areDetailsHidden);
+                $task.toggleClass('opened-task', this.areDetailsHidden);
                 $icon.toggleClass('glyphicon-chevron-down', this.areDetailsHidden);
 
                 this.areDetailsHidden = !this.areDetailsHidden;
