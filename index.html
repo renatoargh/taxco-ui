@@ -127,12 +127,10 @@
             <div class="col-sm-12">
                 <div class="media">
                     <div class="media-left">
-                        <a href="#">
-                            <img class="media-object img-rounded" width="32px" height="32px" src="<%= gravatar %>" alt="<%= owner.name %>">
-                        </a>
+                        <img class="media-object img-rounded" width="32px" height="32px" src="<%= gravatar %>" alt="<%= owner.name %>">
                     </div>
                     <div class="media-body">
-                        <h5 class="media-heading"><%= owner.name %> em <%= moment(createdAt).format('DD/MM/YYYY HH:mm:ss') %> (<%= moment(createdAt).fromNow() %>)</h5>
+                        <h5 class="media-heading"><%= owner.name %> em <%= moment(createdAt).format('DD/MM/YYYY [às] HH:mm:ss') %> (<%= moment(createdAt).fromNow() %>)</h5>
                         <%= content %>
                     </div>
                 </div>
