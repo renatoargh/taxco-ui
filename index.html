@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
-    <title>Gerenciador de Tarefas</title>
+    <title>B. M. Silva - Gerenciador de Tarefas</title>
     <link rel="stylesheet" href="/css/bootstrap.min.css">
     <link rel="stylesheet" href="/css/gritter.css">
     <link rel="stylesheet" href="/css/styles.css">
@@ -130,7 +130,7 @@
                         <img class="media-object img-rounded" width="32px" height="32px" src="<%= gravatar %>" alt="<%= owner.name %>">
                     </div>
                     <div class="media-body">
-                        <h5 class="media-heading"><%= owner.name %> em <%= moment(createdAt).format('DD/MM/YYYY [às] HH:mm:ss') %> (<%= moment(createdAt).fromNow() %>)</h5>
+                        <h5 class="media-heading"><%= owner.name %> em <%= moment(createdAt).format('DD/MM/YYYY [às] HH:mm') %> (<%= moment(createdAt).fromNow() %>)</h5>
                         <%= content %>
                     </div>
                 </div>
@@ -358,7 +358,7 @@
                 <div class="description"></div>
                 <hr />
                 <div class="comments"></div>
-                <small class="text-muted">
+                <small class="task-information text-muted">
                     <span class="isOpen"></span>&nbsp;
                     Criado por
                     <strong>
@@ -368,6 +368,7 @@
                     <span class="createdAt"></span>
                     (<span class="createdAtFromNow"></span>).
                     <span class="assignedTo" />
+                    <span class="visibility" />
                 </small>
                 <div class="actions">
                     <button class="btn btn-xs btn-primary pull-left edit">
@@ -395,6 +396,14 @@
 
     <script>
     $(function() {
+        function pretty(array, lastSeparator){
+            if(typeof lastSeparator === 'undefined') {
+                lastSeparator = 'e';
+            }
+
+            return array.toString().replace(/,/g, ', ').replace(/,\s([^,]+)$/, ' ' + lastSeparator + ' $1');
+        };
+
         function eLocalhost() {
             return [
                 'localhost'
@@ -700,7 +709,7 @@
                         selector: '.createdAt',
                         elAttribute: 'html',
                         converter: function(direction, value) {
-                            return new moment(value).format('L HH:mm');
+                            return new moment(value).format('L [às] HH:mm');
                         }
                     }, {
                         selector: '.createdAtFromNow',
@@ -963,6 +972,46 @@
                     $task = this.$el.find('.task'),
                     $details = this.$el.find('.details'),
                     $icon = this.$el.find('.taskToggler i.glyphicon');
+
+                if(!$task.hasClass('opened-task')) {
+                    $.ajax({
+                        url: baseUrl + '/tasks/' + _this.model.get('id') + '/mark-visualized',
+                        type: 'PUT'
+                    });
+                }
+
+                if(!this.model.get('visibilityLoaded')) {
+                    var get = $.getJSON(baseUrl + '/tasks/' + _this.model.get('id') + '/visibility');
+
+                    get.done(function(visibility) {
+                        if(!visibility.length) {
+                            return;
+                        }
+
+                        var $visibilityInformation = $('<span/>'),
+                            text;
+
+                        if(visibility.length > 1) {
+                            text = $('<span>Visível a outros</span> <strong><span class="allowedPeople">' + visibility.length + '</span></strong> <span>usuários.</span>');
+
+                            var $allowedPeople = text.find('.allowedPeople');
+                            $allowedPeople.attr('title', pretty(visibility.map(function(visibleTo) {
+                                return visibleTo.user.name;
+                            })));
+                            $allowedPeople.tooltip();
+                        } else {
+                            text = 'Visível para <strong>' + visibility[0].user.name + '</strong>.';
+                        }
+
+                        // $visibility.html(text);
+                        $task.find('.task-information').append(text);
+                        console.log(JSON.stringify(visibility, null, 4));
+                    });
+
+                    get.fail(showError);
+
+                    this.model.set('visibilityLoaded', true);
+                }
 
                 if(!this.model.get('commentsLoaded')) {
                     var get = $.getJSON(baseUrl + '/tasks/' + _this.model.get('id') + '/comments');
