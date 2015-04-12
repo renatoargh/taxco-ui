@@ -314,33 +314,33 @@
     </script>
 
     <script type="text/template" id="userTemplate">
-        <td width="24%" class="name">
+        <td class="name">
             <span class="visualize name"></span>
             <input type="text" width="100%" maxlength="75" class="edit name"></input>
         </td>
-        <td width="22%" class="email">
+        <td class="email">
             <span class="email visualize"></span>
             <input type="text" width="100%" maxlength="50" class="email edit"></input>
         </td>
-        <td width="12%" class="telefone">
+        <td class="telefone">
             <span class="telefone visualize"></span>
             <input type="text" maxlength="10" width="100%" maxlength="50" class="telefone edit"></input>
         </td>
-        <td width="12%" class="role">
+        <td class="role">
             <span class="role visualize"></span>
             <select class="role edit">
                 <option value="user">Usuário</option>
                 <option value="admin">Administrador</option>
             </select>
         </td>
-        <td width="10%" class="enabled">
+        <td class="enabled">
             <span class="enabled visualize"></span>
             <select class="enabled edit">
                 <option value="true">SIM</option>
                 <option value="false">NÃO</option>
             </select>
         </td>
-        <td width="20%" class="lastInteraction">
+        <td class="lastInteraction">
             <span class="lastInteraction visualize"></span>
             <button class="save edit btn btn-xs btn-primary">
                 Salvar&nbsp;
@@ -404,7 +404,7 @@
             return array.toString().replace(/,/g, ', ').replace(/,\s([^,]+)$/, ' ' + lastSeparator + ' $1');
         };
 
-        function eLocalhost() {
+        function isLocalhost() {
             return [
                 'localhost'
             ].indexOf(window.location.hostname) > -1;
@@ -416,7 +416,7 @@
 
         var baseUrl = 'http://api.sisgest.bmsilva.com.br';
 
-        if(eLocalhost()) {
+        if(isLocalhost()) {
             baseUrl = 'http://localhost:9090';
         }
 
@@ -441,8 +441,6 @@
 
         var mensagemDeErroPadrao = 'Um erro ocorreu!';
         function showError(message, title) {
-            console.log(arguments);
-
             if(typeof message === 'undefined' || typeof message === 'object') {
                 if(title === 'canceled') {
                     // Mensagem de erro proveniente de cancelamento do ajax, não é necessário exibir
@@ -495,18 +493,22 @@
             });
         }
 
+        var currentUserKey = 'currentUser';
+
         function getCurrentUser() {
-            var currentUser = localStorage.getItem('currentUser');
+            var currentUser = window.localStorage.getItem(currentUserKey);
             return currentUser ? JSON.parse(currentUser) : null;
         }
 
         function setCurrentUser(user) {
+            removeCurrentUser();
+
             var currentUser = JSON.stringify(user);
-            localStorage.setItem('currentUser', currentUser);
+            window.localStorage.setItem(currentUserKey, currentUser);
         }
 
-        function logoutUser() {
-            localStorage.removeItem('currentUser');
+        function removeCurrentUser() {
+            window.localStorage.removeItem(currentUserKey);
         }
 
         $.ajaxSetup({
@@ -545,8 +547,7 @@
                         user.get('password')
                     ].join(':'));
 
-                // setCurrentUser(null);
-                logoutUser();
+                removeCurrentUser();
 
                 var get = $.ajax({
                     type: 'GET',
@@ -585,8 +586,7 @@
                 var $signUpModal = $('#signUpModal'),
                     _this = this;
 
-                // setCurrentUser(null);
-                logoutUser();
+                removeCurrentUser();
 
                 if(this.model.get('password') !== this.model.get('passwordConfirmation')) {
                     return showMessage({
@@ -1003,9 +1003,7 @@
                             text = 'Visível para <strong>' + visibility[0].user.name + '</strong>.';
                         }
 
-                        // $visibility.html(text);
                         $task.find('.task-information').append(text);
-                        console.log(JSON.stringify(visibility, null, 4));
                     });
 
                     get.fail(showError);
@@ -1242,7 +1240,7 @@
                 var user = getCurrentUser();
 
                 if(!user) {
-                    router.navigate('/', {
+                    return router.navigate('/', {
                         trigger: true
                     });
                 }
@@ -1270,6 +1268,14 @@
                 this.modelBinder.bind(this.model, this.el);
             },
             render: function() {
+                var user = getCurrentUser();
+
+                if(!user) {
+                    return router.navigate('/', {
+                        trigger: true
+                    });
+                }
+
                 var _this = this,
                     get = $.getJSON(baseUrl + '/tasks');
 
@@ -1298,12 +1304,12 @@
             },
 
             logout: function(e) {
-                // setCurrentUser(null);
-                logoutUser();
+                removeCurrentUser();
+                location.reload(true); // Para resolver aparente delay de retirar do ls o usuário logado
 
-                router.navigate('/', {
-                    trigger: true
-                });
+                // router.navigate('/', {
+                //     trigger: true
+                // });
             },
 
             saveTask: function(e) {
