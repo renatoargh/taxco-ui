@@ -260,11 +260,21 @@
                 <div class="modal-body">
                     <div class="edit">
                         <div class="row">
-                            <div class="form-group col-sm-10">
+                            <div class="form-group col-sm-8">
                                 <label class="control-label" id="titleLabel" for="title">
                                     Título
                                 </label>
                                 <input class="form-control" type="text" id="title" name="title" placeholder="Título"></input>
+                            </div>
+                            <div class="reviewRequestFormGroup form-group col-sm-2">
+                                <label class="control-label" id="reviewRequestLabel" for="reviewRequest">
+                                    Revisão
+                                </label>
+                                <select class="form-control" type="text" id="reviewRequest" name="reviewRequest" placeholder="Revisão"></input>
+                                    <option value="true">SIM</option>
+                                    <option value="false">NÃO</option>
+                                </select>
+                                <span class="help-block"></span>
                             </div>
                             <div class="isOpenFormGroup form-group col-sm-2">
                                 <label class="control-label" id="isOpenLabel" for="isOpen">
@@ -353,13 +363,23 @@
             <h4 class="taskToggler">
                 <i class="glyphicon glyphicon-chevron-right"></i>&nbsp;
                 <span class="title"></span>
+                <sup class="reviewRequest">
+                    <small class="text-info">
+                        REVISÃO SOLICITADA
+                    </small>
+                </sup>
+                <sup class="newTask displayNone">
+                    <small class="text-info">
+                        NOVA
+                    </small>
+                </sup>
             </h4>
             <span class="details hidden">
                 <div class="description"></div>
                 <hr />
                 <div class="comments"></div>
                 <small class="task-information text-muted">
-                    <span class="isOpen"></span>&nbsp;
+                    <span class="isOpen"></span><br />
                     Criado por
                     <strong>
                         <span class="owner text-muted" />
@@ -382,6 +402,10 @@
                     <button class="btn btn-xs btn-primary pull-left notify">
                         Notificar&nbsp;
                         <i class="glyphicon glyphicon-bullhorn"></i>
+                    </button>
+                    <button class="btn btn-xs btn-primary pull-left requestReview">
+                        Solicitar Revisão&nbsp;
+                        <i class="glyphicon glyphicon-ok"></i>
                     </button>
                     <button class="btn btn-xs btn-danger pull-right delete">
                         Apagar&nbsp;
@@ -674,6 +698,35 @@
                         selector: 'span.title',
                         elAttribute: 'html'
                     }],
+                    reviewRequest: [{
+                        selector: 'sup.reviewRequest',
+                        elAttribute: 'class',
+                        converter: function(direction, reviewRequest) {
+                            reviewRequest = _this.model.get('reviewRequest');
+                            var assignedToMe = user.id === _this.model.get('assignedToId'),
+                                iAmTheOwner = user.id === _this.model.get('ownerId'),
+                                shouldShow = (assignedToMe || iAmTheOwner) && reviewRequest;
+
+                            return shouldShow ? '' : 'displayNone';
+                        }
+                    }, {
+                        selector: 'button.requestReview',
+                        elAttribute: 'class',
+                        converter: function(direction, reviewRequest) {
+                            reviewRequest = _this.model.get('reviewRequest');
+                            var assignedToMe = user.id === _this.model.get('assignedToId');/*,
+                                shouldShow = assignedToMe && reviewRequest;*/
+
+                            return assignedToMe ? '' : 'displayNone';
+                        }
+                    }, {
+                        selector: 'button.requestReview',
+                        elAttribute: 'disabled',
+                        converter: function(direction, reviewRequest) {
+                            reviewRequest = _this.model.get('reviewRequest');
+                            return reviewRequest ? 'disabled' : false;
+                        }
+                    }],
                     isOpen: [{
                         selector: '.isOpen',
                         elAttribute: 'class',
@@ -682,9 +735,9 @@
                         }
                     }, {
                         selector: '.isOpen',
-                        elAttribute: 'html',
                         converter: function(direction, value) {
-                            return value ? 'Aberto' : 'Fechado';
+                            value = value === 'true' || value === 1;
+                            return value ? 'Aberta' : 'Fechada';
                         }
                     }],
                     'owner.name': {
@@ -726,10 +779,39 @@
                 'click button.edit': 'editTask',
                 'click button.delete': 'deleteTask',
                 'click button.comment': 'commentTask',
-                'click button.notify': 'notifyUsers'
+                'click button.notify': 'notifyUsers',
+                'click button.requestReview': 'requestReview'
             },
 
             areDetailsHidden: true,
+
+            requestReview: function(e) {
+                e.preventDefault();
+
+                var _this = this,
+                    mensagem = [
+                        'Deseja realmente solicitar revisão?<br />',
+                        'O criador desta tarefa será notificado.'
+                    ].join('');
+
+                showConfirm(mensagem, function(resultado) {
+                    if(!resultado) {
+                        return;
+                    }
+
+                    var put = $.ajax({
+                        url: baseUrl + '/tasks/' + _this.model.get('id') + '/request-review',
+                        type: 'PUT'
+                    });
+
+                    put.success(function() {
+                        showSuccess('Revisão solicitada!');
+                        _this.$el.find('button.requestReview').prop('disabled', true);
+                    });
+
+                    put.fail(showError);
+                });
+            },
 
             notifyUsers: function(e) {
                 e.preventDefault();
@@ -882,13 +964,31 @@
                         editModelBinder = new Backbone.ModelBinder();
                         editModelBinder.bind(_this.model, $editTaskModal, {
                             title: 'input#title',
+                            reviewRequest: {
+                                selector: 'select#reviewRequest',
+                                converter: function(direction, value) {
+                                    if(value === 1) {
+                                        value = 'true';
+                                    }
+
+                                    if(value === 0) {
+                                        value = 'false';
+                                    }
+
+                                    if(direction === 'ModelToView') {
+                                        return value.toString();
+                                    } else {
+                                        return value === 'true';
+                                    }
+                                }
+                            },
                             isOpen: {
                                 selector: 'select#isOpen',
                                 converter: function(direction, value) {
                                     if(direction === 'ModelToView') {
                                         return value.toString();
                                     } else {
-                                        return value === true;
+                                        return value.toString() === 'true' || value.toString() === '1';
                                     }
                                 }
                             },
@@ -1377,12 +1477,14 @@
                 get.done(function(users) {
                     var $newTask = _this.$el.find('#newTaskModal'),
                         $assignedTo = $newTask.find('select#assignedTo'),
+                        $reviewRequest = $newTask.find('select#reviewRequest'),
                         $isOpen = $newTask.find('select#isOpen'),
                         $visibleTo = $newTask.find('select#visibleTo');
 
                     $assignedTo.html('');
                     $visibleTo.html('');
                     $isOpen.val('true');
+                    $reviewRequest.val('false');
                     _this.model.set('isOpen', 'true');
 
                     users.forEach(function(user) {
