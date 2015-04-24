@@ -1105,10 +1105,20 @@
                             text = $('<span>Visível a outros</span> <strong><span class="allowedPeople">' + visibility.length + '</span></strong> <span>usuários.</span>');
 
                             var $allowedPeople = text.find('.allowedPeople');
-                            $allowedPeople.attr('title', pretty(visibility.map(function(visibleTo) {
-                                return visibleTo.user.name;
-                            })));
-                            $allowedPeople.tooltip();
+
+                            $allowedPeople.attr('title', visibility.map(function(visibleTo) {
+                                var text = visibleTo.user.name;
+
+                                if(visibleTo.visualizedAt) {
+                                    text += '&nbsp;<i class="glyphicon glyphicon-ok"></i>';
+                                }
+
+                                return '<span style="white-space: nowrap">' + text + '</span>';
+                            }).join('<br />'));
+
+                            $allowedPeople.tooltip({
+                                html: true
+                            });
                         } else {
                             text = 'Visível para <strong>' + visibility[0].user.name + '</strong>.';
                         }
