@@ -1117,10 +1117,7 @@
                                 var text = visibleTo.user.name;
 
                                 if(visibleTo.visualizedAt) {
-                                    text += [
-                                        ' em ',
-                                        moment(visibleTo.visualizedAt).format('DD/MM/YY [às] HH:mm')
-                                    ].join('');
+                                    text += ' <i class="glyphicon glyphicon-ok" />';
                                 }
 
                                 return '<span style="white-space: nowrap; text-align:left;">' + text + '</span>';
