@@ -152,7 +152,7 @@
         <div class="row formActions">
             <div class="col-sm-offset-3 col-sm-6">
                 <button id="newTask" class="btn btn-primary btn-sm pull-left">
-                    Nova Tarefa&nbsp;
+                    Novo Registro&nbsp;
                     <i class="glyphicon glyphicon-plus"></i>
                 </button>
                 <button id="listUsers" class="btn btn-primary btn-sm pull-left">
@@ -163,39 +163,27 @@
                     Sair&nbsp;
                     <i class="glyphicon glyphicon glyphicon-log-out"></i>
                 </button>
-                <!-- <div class="dropdown pull-right">
-                  <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="filter" data-toggle="dropdown">
-                    <i class="glyphicon glyphicon-filter"></i>&nbsp;
-                    Filtrar&nbsp;
+                <div class="dropdown pull-right">
+                  <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="typeFilter" data-toggle="dropdown">
+                    <i id="typeIcon" class="glyphicon"></i>&nbsp;
+                    <span id="typeDescription"></span>&nbsp;
                     <span class="caret"></span>
                   </button>
                   <ul class="dropdown-menu" role="menu" aria-labelledby="filter">
                     <li role="presentation">
-                        <a role="menuitem" tabindex="-1" href="#">
-                            <i class="glyphicon glyphicon-ok" />&nbsp;
-                            Criadas por mim
+                        <a role="menuitem" tabindex="-1" href="#tasks" data-type="task">
+                            <i class="glyphicon glyphicon-inbox" />&nbsp;
+                            Tarefas
                         </a>
                     </li>
                     <li role="presentation">
-                        <a role="menuitem" tabindex="-1" href="#">
-                            <i class="glyphicon glyphicon-ok" />&nbsp;
-                            Atribuidas a mim
-                        </a>
-                    </li>
-                    <li role="presentation">
-                        <a role="menuitem" tabindex="-1" href="#">
-                            <i class="glyphicon glyphicon-ok" />&nbsp;
-                            Abertas
-                        </a>
-                    </li>
-                    <li role="presentation">
-                        <a role="menuitem" tabindex="-1" href="#">
-                            <i class="glyphicon glyphicon-ok" />&nbsp;
-                            Fechadas
+                        <a role="menuitem" tabindex="-1" href="#knowledge-base" data-type="knowledgebase">
+                            <i class="glyphicon glyphicon-book" />&nbsp;
+                            Base de Conhecimento
                         </a>
                     </li>
                   </ul>
-                </div> -->
+                </div>
             </div>
         </div>
         <div class="row" id="tasks"></div>
@@ -260,11 +248,21 @@
                 <div class="modal-body">
                     <div class="edit">
                         <div class="row">
-                            <div class="form-group col-sm-8">
+                            <div class="form-group col-sm-6">
                                 <label class="control-label" id="titleLabel" for="title">
                                     Título
                                 </label>
                                 <input class="form-control" type="text" id="title" name="title" placeholder="Título"></input>
+                            </div>
+                            <div class="type form-group col-sm-2">
+                                <label class="control-label" id="typeLabel" for="type">
+                                    Tipo
+                                </label>
+                                <select class="form-control" id="type" name="type" placeholder="Tipo"></input>
+                                    <option value="task">TAREFA</option>
+                                    <option value="knowledgebase">BASE DE CONHECIMENTO</option>
+                                </select>
+                                <span class="help-block"></span>
                             </div>
                             <div class="reviewRequestFormGroup form-group col-sm-2">
                                 <label class="control-label" id="reviewRequestLabel" for="reviewRequest">
@@ -386,7 +384,7 @@
                     </strong>
                     em
                     <span class="createdAt"></span>
-                    (<span class="createdAtFromNow"></span>).
+                    (<span class="createdAtFromNow"></span>).<br />
                     <span class="assignedTo" />
                     <span class="visibility" />
                 </small>
@@ -694,7 +692,7 @@
                 container.append(taskContainer);
                 this.$el.html(this.template());
                 this.$el.find('.editTaskModal').html(this.taskModalTemplate({
-                    title: 'Editar Tarefa'
+                    title: 'Editar Registro'
                 }));
 
                 if(user.role !== 'admin') {
@@ -765,7 +763,11 @@
                         selector: 'div.description',
                         elAttribute: 'html',
                         converter: function(direction, value) {
-                            return marked(value);
+                            var contents = $('<div />').html(marked(value));
+                            contents.find('table').addClass('table table-condensed');
+                            contents = contents.html();
+
+                            return contents;
                         }
                     },
                     createdAt: [{
@@ -992,6 +994,7 @@
                                     }
                                 }
                             },
+                            type: 'select#type',
                             isOpen: {
                                 selector: 'select#isOpen',
                                 converter: function(direction, value) {
@@ -1011,7 +1014,11 @@
                                 selector: '#taskDescription',
                                 elAttribute: 'html',
                                 converter: function(direction, value) {
-                                    return marked(value);
+                                    var contents = $('<div />').html(marked(value));
+                                    contents.find('table').addClass('table table-condensed');
+                                    contents = contents.html();
+
+                                    return contents;
                                 }
                             }],
                             visibleToId: 'select#visibleTo',
@@ -1110,10 +1117,13 @@
                                 var text = visibleTo.user.name;
 
                                 if(visibleTo.visualizedAt) {
-                                    text += '&nbsp;<i class="glyphicon glyphicon-ok"></i>';
+                                    text += [
+                                        ' em ',
+                                        moment(visibleTo.visualizedAt).format('DD/MM/YY [às] HH:mm')
+                                    ].join('');
                                 }
 
-                                return '<span style="white-space: nowrap">' + text + '</span>';
+                                return '<span style="white-space: nowrap; text-align:left;">' + text + '</span>';
                             }).join('<br />'));
 
                             $allowedPeople.tooltip({
@@ -1350,14 +1360,23 @@
         });
 
         var ListTasksView = Backbone.View.extend({
-            initialize: function() {
+            initialize: function(args) {
+                this.type = args && args.type || 'task';
                 this.modelBinder = new Backbone.ModelBinder();
             },
             template: _.template($('#listTasksTemplate').html()),
             taskModalTemplate: _.template($('#taskModalTemplate').html()),
-            el: '.container',
+            close: function() {
+                this.tasksView.forEach(function(taskView) {
+                    taskView.close();
+                });
+
+                this.modelBinder.unbind();
+            },
+            tasksView: [],
             _render: function(tasks) {
-                var user = getCurrentUser();
+                var _this = this,
+                    user = getCurrentUser();
 
                 if(!user) {
                     return router.navigate('/', {
@@ -1366,11 +1385,22 @@
                 }
 
                 var _this = this;
+                // this.$el.off();
                 this.$el.empty();
                 this.$el.html(this.template());
                 this.$el.find('#newTaskModal').html(this.taskModalTemplate({
-                    title: 'Nova Tarefa'
+                    title: 'Novo Registro'
                 }));
+
+                if(this.type === 'task') {
+                    this.$el.find('#typeIcon').addClass('glyphicon-inbox');
+                    this.$el.find('#typeDescription').html('Tarefas');
+                }
+
+                if(this.type === 'knowledgebase') {
+                    this.$el.find('#typeIcon').addClass('glyphicon-book');
+                    this.$el.find('#typeDescription').html('Base de Conhecimento');
+                }
 
                 if(user.role !== 'admin') {
                     this.$el.find('button#newTask').hide();
@@ -1379,6 +1409,7 @@
 
                 tasks.forEach(function(task) {
                     var taskView = new TaskView(task);
+                    _this.tasksView.push(taskView);
                     taskView.render(_this.$el.find('#tasks'));
                 });
 
@@ -1387,7 +1418,7 @@
                 this.modelBinder.unbind();
                 this.modelBinder.bind(this.model, this.el);
             },
-            render: function() {
+            render: function(container) {
                 var user = getCurrentUser();
 
                 if(!user) {
@@ -1397,8 +1428,10 @@
                 }
 
                 var _this = this,
-                    get = $.getJSON(baseUrl + '/tasks');
+                    get = $.getJSON(baseUrl + '/tasks?types[]=' + this.type);
 
+                $(container).find("*").addBack().off();
+                this.setElement(container);
                 this.model = new Backbone.Model();
 
                 get.done(function(tasks) {
@@ -1440,6 +1473,7 @@
                         data: _.pick(this.model.attributes, [
                             'title',
                             'description',
+                            'type',
                             'assignedToId',
                             'visibleToId',
                             'isOpen'
@@ -1456,7 +1490,7 @@
                         text: 'Tarefa salva!'
                     });
 
-                    _this.render();
+                    window.location.reload();
                 });
 
                 post.fail(function() {
@@ -1482,6 +1516,7 @@
 
                 this.$el.find('#newTaskModal .modal-body #taskTitle').html(title);
                 this.$el.find('#newTaskModal .modal-body #taskDescription').html(marked(description || ''));
+                this.$el.find('#newTaskModal .modal-body #taskDescription').find('table').addClass('table table-condensed');
 
                 this.$el.find('#newTaskModal .modal-body .edit').hide();
                 this.$el.find('#newTaskModal .modal-footer #visualizeNewTask').hide();
@@ -1494,13 +1529,21 @@
                 var _this = this,
                     get = $.getJSON(baseUrl + '/users?enabled=true');
 
+                this.modelBinder.unbind();
+
+                this.model = new Backbone.Model();
+                this.modelBinder.bind(this.model, this.el);
+
                 get.done(function(users) {
                     var $newTask = _this.$el.find('#newTaskModal'),
                         $assignedTo = $newTask.find('select#assignedTo'),
                         $reviewRequest = $newTask.find('select#reviewRequest'),
+                        $type = $newTask.find('select#type'),
                         $isOpen = $newTask.find('select#isOpen'),
                         $visibleTo = $newTask.find('select#visibleTo');
 
+                    $type.val(_this.type);
+                    _this.model.set('type', _this.type);
                     $assignedTo.html('');
                     $visibleTo.html('');
                     $isOpen.val('true');
@@ -1515,7 +1558,7 @@
                     $assignedTo.prepend($('<option />').html('NINGUÉM'));
                     $visibleTo.prepend($('<option />').val('ALL').html('TODOS'));
 
-                    $newTask.find('h4.modal-title').html('Nova Tarefa');
+                    $newTask.find('h4.modal-title').html('Novo Registro');
                     $newTask.modal('show');
                 });
 
@@ -1557,19 +1600,35 @@
                 routes: {
                     '': 'logIn' ,
                     'tasks': 'listTasks',
+                    'knowledge-base': 'listKnowledgeBase',
                     'tasks/:id': 'showTask'
                 }
             }),
+            currentView,
             router = new Router();
+
+        router.on('route', function() {
+            if(currentView && currentView.close) {
+                currentView && currentView.close();
+            }
+        });
 
         router.on('route:logIn', function() {
             var view = new LogInView();
+            currentView = view;
             view.render();
         });
 
         router.on('route:listTasks', function() {
-            var view = new ListTasksView();
-            view.render();
+            var view = new ListTasksView({ type: 'task' });
+            currentView = view;
+            view.render($('.container').empty());
+        });
+
+        router.on('route:listKnowledgeBase', function() {
+            var view = new ListTasksView({ type: 'knowledgebase' });
+            currentView = view;
+            view.render($('.container').empty());
         });
 
         Backbone.history.start();
