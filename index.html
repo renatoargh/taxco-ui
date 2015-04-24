@@ -561,7 +561,17 @@
             events: {
                 'click button#login': 'login',
                 'click button#signUp': 'signUp',
-                'click button#sendSignUpForm': 'sendSignUpForm'
+                'click button#sendSignUpForm': 'sendSignUpForm',
+                'keypress input#password': 'passwordKeypress'
+            },
+
+            passwordKeypress: function(e) {
+                var code = e.keyCode || e.which,
+                    isEnterKey = code === 13;
+
+                if(isEnterKey) {
+                    this.login();
+                }
             },
 
             login: function() {
